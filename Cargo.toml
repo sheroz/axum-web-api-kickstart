@@ -1,0 +1,16 @@
+[package]
+name = "axum-web"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sheroz Khaydarov"]
+description = "Web samples using axum"
+readme = "README.md"
+repository = "https://github.com/sheroz/axum-web"
+license = "MIT"
+
+[dependencies]
+axum = "0.6"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
