@@ -1,10 +1,12 @@
 use axum::{
-    response::{Html, IntoResponse},
-    routing::{any, get},
+    extract::Query,
+    http,
+    response::{Html, IntoResponse, Response},
+    routing::{any, get, post},
     Router,
 };
-use hyper::StatusCode;
-use std::net::SocketAddr;
+use hyper::{Body, HeaderMap, Request, StatusCode};
+use std::{collections::HashMap, net::SocketAddr};
 use tokio::signal;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -26,7 +28,9 @@ async fn main() {
     // build our application with a route
     let app = Router::new()
         .route("/", get(handler_root))
-        .route("/login", any(handler_login));
+        .route("/head", get(handler_head))
+        .route("/login", post(handler_post_login).get(handler_get_login))
+        .route("/any", any(handler_any));
 
     // add a fallback service for handling routes to unknown paths
     let app = app.fallback(handler_404);
@@ -44,28 +48,69 @@ async fn main() {
         .await
         .unwrap();
 
-        if tracing::enabled!(Level::INFO) {
+    if tracing::enabled!(Level::INFO) {
         tracing::info!("server shutdown successfully.");
     }
 }
 
 async fn handler_root() -> Html<&'static str> {
     if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("request: /");
+        tracing::trace!("entered: handler_root()");
     }
     Html("axum-web")
 }
 
-async fn handler_login() -> impl IntoResponse {
+async fn handler_head(method: http::Method) -> Response {
     if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("request: login");
+        tracing::trace!("entered handler_head()");
     }
-    (StatusCode::FORBIDDEN, "forbidden")
+    // it usually only makes sense to special-case HEAD
+    // if computing the body has some relevant cost
+    if method == http::Method::HEAD {
+        if tracing::enabled!(Level::TRACE) {
+            tracing::trace!("head method found");
+        }
+
+        return ([("x-some-header", "header from HEAD")]).into_response();
+    }
+
+    ([("x-some-header", "header from GET")], "body from GET").into_response()
+}
+
+async fn handler_get_login() -> Response {
+    if tracing::enabled!(Level::TRACE) {
+        tracing::trace!("entered: handler_get_login()");
+    }
+    (StatusCode::FORBIDDEN, "forbidden").into_response()
+}
+
+async fn handler_post_login() -> Response {
+    if tracing::enabled!(Level::TRACE) {
+        tracing::trace!("entered: handler_post_login()");
+    }
+    (StatusCode::FORBIDDEN, "forbidden").into_response()
+}
+
+async fn handler_any(
+    method: http::Method,
+    headers: HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+    request: Request<Body>,
+) -> Response {
+    if tracing::enabled!(Level::TRACE) {
+        tracing::trace!("entered: handler_any()");
+        tracing::trace!("method: {:?}", method);
+        tracing::trace!("headers: {:?}", headers);
+        tracing::trace!("params: {:?}", params);
+        tracing::trace!("request: {:?}", request);
+    }
+
+    (StatusCode::OK, "any").into_response()
 }
 
 async fn handler_404() -> impl IntoResponse {
     if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("request: unknown route");
+        tracing::trace!("entered: handler_404()");
     }
     (StatusCode::NOT_FOUND, "not found")
 }
