@@ -17,9 +17,14 @@ async fn main() {
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "axum_web=trace".into()),
+                .unwrap_or_else(|_| "axum_web=trace".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    if tracing::enabled!(Level::INFO) {
+        tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    }
 
     if tracing::enabled!(Level::INFO) {
         tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
@@ -36,7 +41,13 @@ async fn main() {
     let app = app.fallback(handler_404);
 
     // run the hyper service
+    // run the hyper service
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+    if tracing::enabled!(Level::DEBUG) {
+        tracing::debug!("listening on {}", addr);
+    }
+
 
     if tracing::enabled!(Level::DEBUG) {
         tracing::debug!("listening on {}", addr);
