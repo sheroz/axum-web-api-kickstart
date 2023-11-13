@@ -5,10 +5,16 @@
 
 ## Logging
 
-Setting the environment variable `RUST_LOG` to control the logging level on the launch.
+Setting the `RUST_LOG` - logging level on the launch
 
 ```text
 RUST_LOG=info,hyper=debug,axum_web=trace cargo run
+```
+
+## Running
+
+```text
+docker-compose up -d
 ```
 
 ## Project Stage
