@@ -6,6 +6,7 @@ use axum::{
     Router,
 };
 use hyper::{Body, HeaderMap, Request, StatusCode};
+use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashMap, net::SocketAddr};
 use tokio::signal;
 use tracing::Level;
@@ -25,15 +26,45 @@ async fn main() {
         tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     }
 
-    // build our application with a route
-    let app = Router::new()
-        .route("/", get(handler_root))
-        .route("/head", get(handler_head))
-        .route("/login", post(handler_post_login).get(handler_get_login))
-        .route("/any", any(handler_any));
+    // connect to redis
+    let redis_url = "redis://127.0.0.1:6379";
+    let _redis = match redis::Client::open(redis_url) {
+        Ok(redis) => {
+            if tracing::enabled!(tracing::Level::INFO) {
+                tracing::info!("Connected to redis");
+            }
+            redis
+        }
+        Err(e) => {
+            tracing::error!("Could not connect to redis: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    // add a fallback service for handling routes to unknown paths
-    let app = app.fallback(handler_404);
+    // connect to postgres
+    let postgres_url = "postgresql://admin:pswd1234@localhost:5432/axum_web";
+    let pgpool = match PgPoolOptions::new()
+        .max_connections(5)
+        .connect(postgres_url)
+        .await
+    {
+        Ok(pool) => {
+            if tracing::enabled!(tracing::Level::INFO) {
+                tracing::info!("Connected to postgres");
+            }
+            pool
+        }
+        Err(e) => {
+            tracing::error!("Could not connect to postgres: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // run migrations
+    sqlx::migrate!("db/migrations").run(&pgpool).await.unwrap();
+
+    // build application with a router
+    let app = build_router();
 
     // run the hyper service
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -53,14 +84,25 @@ async fn main() {
     }
 }
 
-async fn handler_root() -> Html<&'static str> {
+fn build_router() -> Router {
+    // build our application with a route
+    Router::new()
+        // add a fallback service for handling routes to unknown paths
+        .fallback(error_404_handler)
+        .route("/", get(root_handler))
+        .route("/head", get(head_request_handler))
+        .route("/login", post(login_handler_post).get(login_handler_get))
+        .route("/any", any(any_request_handler))
+}
+
+async fn root_handler() -> Html<&'static str> {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered: handler_root()");
     }
     Html("axum-web")
 }
 
-async fn handler_head(method: http::Method) -> Response {
+async fn head_request_handler(method: http::Method) -> Response {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered handler_head()");
     }
@@ -77,21 +119,21 @@ async fn handler_head(method: http::Method) -> Response {
     ([("x-some-header", "header from GET")], "body from GET").into_response()
 }
 
-async fn handler_get_login() -> Response {
+async fn login_handler_get() -> Response {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered: handler_get_login()");
     }
     (StatusCode::FORBIDDEN, "forbidden").into_response()
 }
 
-async fn handler_post_login() -> Response {
+async fn login_handler_post() -> Response {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered: handler_post_login()");
     }
     (StatusCode::FORBIDDEN, "forbidden").into_response()
 }
 
-async fn handler_any(
+async fn any_request_handler(
     method: http::Method,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
@@ -108,7 +150,7 @@ async fn handler_any(
     (StatusCode::OK, "any").into_response()
 }
 
-async fn handler_404() -> impl IntoResponse {
+async fn error_404_handler() -> impl IntoResponse {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered: handler_404()");
     }
