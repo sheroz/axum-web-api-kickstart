@@ -12,6 +12,7 @@ Includes samples of:
 - connecting and using `redis`
 - connecting and using `postgres`
   - connection pooling
+  - migrations
 - parsing `.env` based configuration
   - using macro rules to reduce boilerplate
 - `tracing` based logs
