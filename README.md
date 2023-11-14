@@ -9,8 +9,8 @@ Includes samples of:
   - routing
   - error handling
   - graceful shutdown
-- connecting and using `redis`
-- connecting and using `postgres`
+- connecting to `redis`
+- connecting to `postgres`
   - connection pooling
   - migrations
 - parsing `.env` based configuration
@@ -33,7 +33,7 @@ cargo run
 
 link to the web app: [http://127.0.0.1:3000/](http://127.0.0.1:3000/)
 
-link to the pgAdmin4: [http://127.0.0.1:9191/](http://127.0.0.1:9191/)
+link to the pgAdmin4: [http://127.0.0.1:5050/](http://127.0.0.1:5050/)
 
 ## Logging
 
