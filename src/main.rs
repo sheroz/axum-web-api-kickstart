@@ -12,6 +12,8 @@ use tokio::signal;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod config;
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
@@ -26,9 +28,11 @@ async fn main() {
         tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     }
 
+    // parse configuration
+    let config = config::from_dotenv();
+
     // connect to redis
-    let redis_url = "redis://127.0.0.1:6379";
-    let _redis = match redis::Client::open(redis_url) {
+    let _redis = match redis::Client::open(config.redis_url()) {
         Ok(redis) => {
             if tracing::enabled!(tracing::Level::INFO) {
                 tracing::info!("Connected to redis");
@@ -42,10 +46,9 @@ async fn main() {
     };
 
     // connect to postgres
-    let postgres_url = "postgresql://admin:pswd1234@localhost:5432/axum_web";
     let pgpool = match PgPoolOptions::new()
         .max_connections(5)
-        .connect(postgres_url)
+        .connect(&config.postgres_url())
         .await
     {
         Ok(pool) => {

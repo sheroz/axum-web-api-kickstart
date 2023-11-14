@@ -9,6 +9,7 @@ repository = "https://github.com/sheroz/axum-web"
 license = "MIT"
 
 [dependencies]
+dotenv = "0.15"
 axum = { version = "0.6" }
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
