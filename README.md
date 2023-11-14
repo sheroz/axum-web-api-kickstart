@@ -14,8 +14,12 @@ Includes samples of:
   - connection pooling
 - parsing `.env` based configuration
   - using macro rules to reduce boilerplate
-- using `tracing` based logs
-- using `docker-compose`
+- `tracing` based logs
+- `docker-compose` configuration
+  - `redis` service
+  - `postgres` service
+  - `pgAdmin` service
+    - disabled login dialog (using `PGADMIN_CONFIG_SERVER_MODE` param)
 
 ## Run
 
