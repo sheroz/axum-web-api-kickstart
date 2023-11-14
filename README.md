@@ -1,13 +1,21 @@
-# Web samples using `axum`
+# Web Service Sample
 
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
 
-Components:
+Includes samples of:
 
-- web service
-- redis / docker
-- postgres / docker
+- web service based on `axum`
+  - routing
+  - error handling
+  - graceful shutdown
+- connecting and using `redis`
+- connecting and using `postgres`
+  - connection pooling
+- parsing `.env` based configuration
+  - using macro rules to reduce boilerplate
+- using `tracing` based logs
+- using `docker-compose`
 
 ## Run
 
