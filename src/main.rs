@@ -102,7 +102,7 @@ async fn root_handler() -> Html<&'static str> {
     if tracing::enabled!(Level::TRACE) {
         tracing::trace!("entered: handler_root()");
     }
-    Html("axum-web")
+    Html("<h1>Axum-Web</h1>")
 }
 
 async fn head_request_handler(method: http::Method) -> Response {
