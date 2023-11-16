@@ -1,37 +1,10 @@
 use std::{net::SocketAddr, str::FromStr};
 
-// using macro to reduce boilerplate
-macro_rules! env_get {
-    ($key:expr) => {
-        match std::env::var($key) {
-            Ok(v) => v,
-            Err(e) => {
-                let msg = format!("{} {}", $key, e);
-                tracing::error!(msg);
-                panic!("{msg}");
-            }
-        }
-    };
-}
-
-macro_rules! env_parse {
-    ($key:expr) => {
-        match env_get!($key).parse() {
-            Ok(v) => v,
-            Err(_) => {
-                let msg = format!("Failed to parse: {}", $key);
-                tracing::error!(msg);
-                panic!("{msg}");
-            }
-        }
-    };
-}
-
 pub struct Config {
     // service
     pub service_host: String,
     pub service_port: u16,
-    
+
     // redis
     pub redis_host: String,
     pub redis_port: u16,
@@ -69,14 +42,38 @@ pub fn from_dotenv() -> Config {
 
     // parse configuration
     Config {
-        service_host: env_get!("SERVICE_HOST"),
-        service_port: env_parse!("SERVICE_PORT"),
-        redis_host: env_get!("REDIS_HOST"),
-        redis_port: env_parse!("REDIS_PORT"),
-        postgres_user: env_get!("POSTGRES_USER"),
-        postgres_password: env_get!("POSTGRES_PASSWORD"),
-        postgres_host: env_get!("POSTGRES_HOST"),
-        postgres_port: env_parse!("POSTGRES_PORT"),
-        postgres_db: env_get!("POSTGRES_DB"),
+        service_host: env_get("SERVICE_HOST"),
+        service_port: env_parse("SERVICE_PORT"),
+        redis_host: env_get("REDIS_HOST"),
+        redis_port: env_parse("REDIS_PORT"),
+        postgres_user: env_get("POSTGRES_USER"),
+        postgres_password: env_get("POSTGRES_PASSWORD"),
+        postgres_host: env_get("POSTGRES_HOST"),
+        postgres_port: env_parse("POSTGRES_PORT"),
+        postgres_db: env_get("POSTGRES_DB"),
+    }
+}
+
+#[inline]
+fn env_get(key: &str) -> String {
+    match std::env::var(key) {
+        Ok(v) => v,
+        Err(e) => {
+            let msg = format!("{} {}", key, e);
+            tracing::error!(msg);
+            panic!("{msg}");
+        }
+    }
+}
+
+#[inline]
+fn env_parse<T: std::str::FromStr>(key: &str) -> T {
+    match env_get(key).parse() {
+        Ok(v) => v,
+        Err(_) => {
+            let msg = format!("Failed to parse: {}", key);
+            tracing::error!(msg);
+            panic!("{msg}");
+        }
     }
 }

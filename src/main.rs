@@ -67,7 +67,7 @@ async fn main() {
 
     // get service listening address
     let addr = config.service_addr();
-    tracing::debug!("listening on {}", addr);
+    tracing::info!("listening on {}", addr);
 
     // build the state
     let shared_state = Arc::new(AppState {

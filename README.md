@@ -14,7 +14,6 @@ The project covers:
   - connection pooling
   - migrations
 - parsing `.env` based configuration
-  - using macro rules to reduce boilerplate
 - `tracing` based logs
 - `docker-compose` configuration
   - `redis` service
