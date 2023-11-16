@@ -3,7 +3,6 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
 
 use hyper::{Body, HeaderMap, Request, StatusCode};
-use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::{
@@ -30,9 +29,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-    }
+    tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
     // parse configuration
     let config = config::from_dotenv();
@@ -40,9 +37,7 @@ async fn main() {
     // connect to redis
     let redis = match redis::Client::open(config.redis_url()) {
         Ok(redis) => {
-            if tracing::enabled!(tracing::Level::INFO) {
-                tracing::info!("Connected to redis");
-            }
+            tracing::info!("Connected to redis");
             redis
         }
         Err(e) => {
@@ -58,9 +53,7 @@ async fn main() {
         .await
     {
         Ok(pool) => {
-            if tracing::enabled!(tracing::Level::INFO) {
-                tracing::info!("Connected to postgres");
-            }
+            tracing::info!("Connected to postgres");
             pool
         }
         Err(e) => {
@@ -74,9 +67,7 @@ async fn main() {
 
     // get service listening address
     let addr = config.service_addr();
-    if tracing::enabled!(Level::DEBUG) {
-        tracing::debug!("listening on {}", addr);
-    }
+    tracing::debug!("listening on {}", addr);
 
     // build the state
     let shared_state = Arc::new(AppState {
@@ -95,9 +86,7 @@ async fn main() {
         .await
         .unwrap();
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("server shutdown successfully.");
-    }
+    tracing::info!("server shutdown successfully.");
 }
 
 fn routes(state: SharedState) -> Router {
@@ -116,23 +105,16 @@ fn routes(state: SharedState) -> Router {
 }
 
 async fn root_handler(State(_state): State<SharedState>) -> Html<&'static str> {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: root_handler()");
-    }
+    tracing::debug!("entered: root_handler()");
     Html("<h1>Axum-Web</h1>")
 }
 
 async fn head_request_handler(State(_state): State<SharedState>, method: http::Method) -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered head_request_handler()");
-    }
+    tracing::debug!("entered head_request_handler()");
     // it usually only makes sense to special-case HEAD
     // if computing the body has some relevant cost
     if method == http::Method::HEAD {
-        if tracing::enabled!(Level::TRACE) {
-            tracing::trace!("head method found");
-        }
-
+        tracing::debug!("head method found");
         return ([("x-some-header", "header from HEAD")]).into_response();
     }
 
@@ -146,21 +128,19 @@ async fn any_request_handler(
     Query(params): Query<HashMap<String, String>>,
     request: Request<Body>,
 ) -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: any_request_handler()");
-        tracing::trace!("method: {:?}", method);
-        tracing::trace!("headers: {:?}", headers);
-        tracing::trace!("params: {:?}", params);
-        tracing::trace!("request: {:?}", request);
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        tracing::debug!("entered: any_request_handler()");
+        tracing::debug!("method: {:?}", method);
+        tracing::debug!("headers: {:?}", headers);
+        tracing::debug!("params: {:?}", params);
+        tracing::debug!("request: {:?}", request);
     }
 
     (StatusCode::OK, "any").into_response()
 }
 
 async fn error_404_handler(State(_state): State<SharedState>) -> impl IntoResponse {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: error_404_handler()");
-    }
+    tracing::debug!("entered: error_404_handler()");
     (StatusCode::NOT_FOUND, "not found")
 }
 
@@ -187,7 +167,5 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("received termination signal, shutting down...");
-    }
+    tracing::info!("received termination signal, shutting down...");
 }

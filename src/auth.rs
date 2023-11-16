@@ -15,15 +15,11 @@ pub fn routes() -> Router<SharedState> {
 }
 
 async fn login_handler(State(_state): State<SharedState>) -> Response {
-    if tracing::enabled!(tracing::Level::TRACE) {
-        tracing::trace!("entered: handler_get_login()");
-    }
+    tracing::debug!("entered: handler_get_login()");
     (StatusCode::FORBIDDEN, "forbidden").into_response()
 }
 
 async fn logout_handler(State(_state): State<SharedState>) -> Response {
-    if tracing::enabled!(tracing::Level::TRACE) {
-        tracing::trace!("entered: handler_post_login()");
-    }
+    tracing::debug!("entered: handler_post_login()");
     (StatusCode::FORBIDDEN, "forbidden").into_response()
 }
