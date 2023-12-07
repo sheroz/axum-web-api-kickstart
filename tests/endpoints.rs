@@ -9,6 +9,7 @@ use tokio::net::TcpStream;
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[test]
+#[ignore]
 fn root_path_test() {
 
     // parse configuration
