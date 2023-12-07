@@ -8,7 +8,7 @@ The project covers:
 - web service based on `axum`
   - routing
   - error handling
-  - graceful shutdown
+  - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
 - connecting to `redis`
 - connecting to `postgres`
   - connection pooling

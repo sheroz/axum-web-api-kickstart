@@ -2,7 +2,7 @@ use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
 
-use hyper::{body::Body, HeaderMap, StatusCode};
+use hyper::{HeaderMap, StatusCode};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::{
@@ -157,7 +157,7 @@ async fn error_404_handler(State(_state): State<SharedState>) -> impl IntoRespon
     (StatusCode::NOT_FOUND, "not found")
 }
 
-async fn shutdown_signal() {
+async fn _shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
