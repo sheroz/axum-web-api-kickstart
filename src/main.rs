@@ -2,11 +2,11 @@ use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
 
-use hyper::{Body, HeaderMap, Request, StatusCode};
+use hyper::{body::Body, HeaderMap, StatusCode};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::{
-    extract::{Query, State},
+    extract::{Query, State, Request},
     http,
     response::{Html, IntoResponse, Response},
     routing::{any, get},
@@ -79,12 +79,23 @@ async fn main() {
     // build the service routes
     let routes = routes(shared_state);
 
-    // run the hyper service
-    hyper::Server::bind(&addr)
+    let listener = tokio::net::TcpListener::bind(&addr)
+    .await
+    .unwrap();
+
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+
+    axum::serve(listener, routes).await.unwrap();
+    
+    /*
+        // hyper v1 => shutdown requires bilerplate logic now :(
+        // run the hyper service
+        hyper::Server::bind(&addr)
         .serve(routes.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+     */
 
     tracing::info!("server shutdown successfully.");
 }
@@ -121,13 +132,15 @@ async fn head_request_handler(State(_state): State<SharedState>, method: http::M
     ([("x-some-header", "header from GET")], "body from GET").into_response()
 }
 
+
 async fn any_request_handler(
     State(_state): State<SharedState>,
     method: http::Method,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
-    request: Request<Body>,
-) -> Response {
+    request: Request,
+) -> Response 
+{
     if tracing::enabled!(tracing::Level::DEBUG) {
         tracing::debug!("entered: any_request_handler()");
         tracing::debug!("method: {:?}", method);
