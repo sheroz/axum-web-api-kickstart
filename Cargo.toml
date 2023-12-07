@@ -10,10 +10,13 @@ license = "MIT"
 
 [dependencies]
 dotenv = "0.15"
-axum = { version = "0.6" }
-hyper = { version = "0.14", features = ["full"] }
+bytes = "1"
+axum = { version = "0.7" }
+hyper = { version = "1.0", features = ["full"] }
+http-body-util = { version = "0.1" }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-redis = { version = "0.23", features = ["tokio-comp"] }
+redis = { version = "0.24", features = ["tokio-comp"] }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres"] }
+hyper-util = { version = "0.1", features = ["full"] }

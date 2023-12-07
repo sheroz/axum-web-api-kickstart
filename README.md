@@ -3,18 +3,17 @@
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
 
-Includes samples of:
+The project covers:
 
 - web service based on `axum`
   - routing
   - error handling
-  - graceful shutdown
+  - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
 - connecting to `redis`
 - connecting to `postgres`
   - connection pooling
   - migrations
 - parsing `.env` based configuration
-  - using macro rules to reduce boilerplate
 - `tracing` based logs
 - `docker-compose` configuration
   - `redis` service

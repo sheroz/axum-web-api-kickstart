@@ -1,18 +1,23 @@
-use axum::{
-    extract::Query,
-    http,
-    response::{Html, IntoResponse, Response},
-    routing::{any, get, post},
-    Router,
-};
-use hyper::{Body, HeaderMap, Request, StatusCode};
 use sqlx::postgres::PgPoolOptions;
-use std::{collections::HashMap, net::SocketAddr};
+use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
-use tracing::Level;
+
+use hyper::{HeaderMap, StatusCode};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod config;
+use axum::{
+    extract::{Query, State, Request},
+    http,
+    response::{Html, IntoResponse, Response},
+    routing::{any, get},
+    Router,
+};
+
+use axum_web::{
+    auth, config,
+    state::{AppState, SharedState},
+    user,
+};
 
 #[tokio::main]
 async fn main() {
@@ -24,19 +29,15 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-    }
+    tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
     // parse configuration
     let config = config::from_dotenv();
 
     // connect to redis
-    let _redis = match redis::Client::open(config.redis_url()) {
+    let redis = match redis::Client::open(config.redis_url()) {
         Ok(redis) => {
-            if tracing::enabled!(tracing::Level::INFO) {
-                tracing::info!("Connected to redis");
-            }
+            tracing::info!("Connected to redis");
             redis
         }
         Err(e) => {
@@ -52,9 +53,7 @@ async fn main() {
         .await
     {
         Ok(pool) => {
-            if tracing::enabled!(tracing::Level::INFO) {
-                tracing::info!("Connected to postgres");
-            }
+            tracing::info!("Connected to postgres");
             pool
         }
         Err(e) => {
@@ -66,101 +65,99 @@ async fn main() {
     // run migrations
     sqlx::migrate!("db/migrations").run(&pgpool).await.unwrap();
 
-    // build application with a router
-    let app = build_router();
+    // get service listening address
+    let addr = config.service_addr();
+    tracing::info!("listening on {}", addr);
 
-    // run the hyper service
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    // build the state
+    let shared_state = Arc::new(AppState {
+        pgpool,
+        redis,
+        config,
+    });
 
-    if tracing::enabled!(Level::DEBUG) {
-        tracing::debug!("listening on {}", addr);
-    }
+    // build the service routes
+    let routes = routes(shared_state);
 
-    hyper::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(&addr)
+    .await
+    .unwrap();
+
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+
+    axum::serve(listener, routes).await.unwrap();
+    
+    /*
+        // hyper v1 => shutdown requires bilerplate logic now :(
+        // run the hyper service
+        hyper::Server::bind(&addr)
+        .serve(routes.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+     */
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("server shutdown successfully.");
-    }
+    tracing::info!("server shutdown successfully.");
 }
 
-fn build_router() -> Router {
-    // build our application with a route
+fn routes(state: SharedState) -> Router {
+    // build the service routes
     Router::new()
         // add a fallback service for handling routes to unknown paths
         .fallback(error_404_handler)
         .route("/", get(root_handler))
         .route("/head", get(head_request_handler))
-        .route("/login", post(login_handler_post).get(login_handler_get))
         .route("/any", any(any_request_handler))
+        // nesting the authentication related routes under `/auth`
+        .nest("/auth", auth::routes())
+        // nesting the user related routes under `/user`
+        .nest("/user", user::routes())
+        .with_state(state)
 }
 
-async fn root_handler() -> Html<&'static str> {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: handler_root()");
-    }
-    Html("axum-web")
+async fn root_handler(State(_state): State<SharedState>) -> Html<&'static str> {
+    tracing::debug!("entered: root_handler()");
+    Html("<h1>Axum-Web</h1>")
 }
 
-async fn head_request_handler(method: http::Method) -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered handler_head()");
-    }
+async fn head_request_handler(State(_state): State<SharedState>, method: http::Method) -> Response {
+    tracing::debug!("entered head_request_handler()");
     // it usually only makes sense to special-case HEAD
     // if computing the body has some relevant cost
     if method == http::Method::HEAD {
-        if tracing::enabled!(Level::TRACE) {
-            tracing::trace!("head method found");
-        }
-
+        tracing::debug!("head method found");
         return ([("x-some-header", "header from HEAD")]).into_response();
     }
 
     ([("x-some-header", "header from GET")], "body from GET").into_response()
 }
 
-async fn login_handler_get() -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: handler_get_login()");
-    }
-    (StatusCode::FORBIDDEN, "forbidden").into_response()
-}
-
-async fn login_handler_post() -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: handler_post_login()");
-    }
-    (StatusCode::FORBIDDEN, "forbidden").into_response()
-}
 
 async fn any_request_handler(
+    State(_state): State<SharedState>,
     method: http::Method,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
-    request: Request<Body>,
-) -> Response {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: handler_any()");
-        tracing::trace!("method: {:?}", method);
-        tracing::trace!("headers: {:?}", headers);
-        tracing::trace!("params: {:?}", params);
-        tracing::trace!("request: {:?}", request);
+    request: Request,
+) -> Response 
+{
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        tracing::debug!("entered: any_request_handler()");
+        tracing::debug!("method: {:?}", method);
+        tracing::debug!("headers: {:?}", headers);
+        tracing::debug!("params: {:?}", params);
+        tracing::debug!("request: {:?}", request);
     }
 
     (StatusCode::OK, "any").into_response()
 }
 
-async fn error_404_handler() -> impl IntoResponse {
-    if tracing::enabled!(Level::TRACE) {
-        tracing::trace!("entered: handler_404()");
-    }
+async fn error_404_handler(State(_state): State<SharedState>) -> impl IntoResponse {
+    tracing::debug!("entered: error_404_handler()");
     (StatusCode::NOT_FOUND, "not found")
 }
 
-async fn shutdown_signal() {
+async fn _shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -183,7 +180,5 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 
-    if tracing::enabled!(Level::INFO) {
-        tracing::info!("received termination signal, shutting down...");
-    }
+    tracing::info!("received termination signal, shutting down...");
 }

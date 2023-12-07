@@ -1,31 +1,10 @@
-// using macro to reduce boilerplate
-macro_rules! env_get {
-    ($key:expr) => {
-        match std::env::var($key) {
-            Ok(v) => v,
-            Err(e) => {
-                let msg = format!("{} {}", $key, e);
-                tracing::error!(msg);
-                panic!("{msg}");
-            }
-        }
-    };
-}
-
-macro_rules! env_parse {
-    ($key:expr) => {
-        match env_get!($key).parse() {
-            Ok(v) => v,
-            Err(_) => {
-                let msg = format!("Failed to parse: {}", $key);
-                tracing::error!(msg);
-                panic!("{msg}");
-            }
-        }
-    };
-}
+use std::{net::SocketAddr, str::FromStr};
 
 pub struct Config {
+    // service
+    pub service_host: String,
+    pub service_port: u16,
+
     // redis
     pub redis_host: String,
     pub redis_port: u16,
@@ -38,6 +17,10 @@ pub struct Config {
     pub postgres_db: String,
 }
 impl Config {
+    pub fn service_addr(&self) -> SocketAddr {
+        SocketAddr::from_str(&format!("{}:{}", self.service_host, self.service_port)).unwrap()
+    }
+
     pub fn redis_url(&self) -> String {
         format!("redis://{}:{}", self.redis_host, self.redis_port)
     }
@@ -59,12 +42,38 @@ pub fn from_dotenv() -> Config {
 
     // parse configuration
     Config {
-        redis_host: env_get!("REDIS_HOST"),
-        redis_port: env_parse!("REDIS_PORT"),
-        postgres_user: env_get!("POSTGRES_USER"),
-        postgres_password: env_get!("POSTGRES_PASSWORD"),
-        postgres_host: env_get!("POSTGRES_HOST"),
-        postgres_port: env_parse!("POSTGRES_PORT"),
-        postgres_db: env_get!("POSTGRES_DB"),
+        service_host: env_get("SERVICE_HOST"),
+        service_port: env_parse("SERVICE_PORT"),
+        redis_host: env_get("REDIS_HOST"),
+        redis_port: env_parse("REDIS_PORT"),
+        postgres_user: env_get("POSTGRES_USER"),
+        postgres_password: env_get("POSTGRES_PASSWORD"),
+        postgres_host: env_get("POSTGRES_HOST"),
+        postgres_port: env_parse("POSTGRES_PORT"),
+        postgres_db: env_get("POSTGRES_DB"),
+    }
+}
+
+#[inline]
+fn env_get(key: &str) -> String {
+    match std::env::var(key) {
+        Ok(v) => v,
+        Err(e) => {
+            let msg = format!("{} {}", key, e);
+            tracing::error!(msg);
+            panic!("{msg}");
+        }
+    }
+}
+
+#[inline]
+fn env_parse<T: std::str::FromStr>(key: &str) -> T {
+    match env_get(key).parse() {
+        Ok(v) => v,
+        Err(_) => {
+            let msg = format!("Failed to parse: {}", key);
+            tracing::error!(msg);
+            panic!("{msg}");
+        }
     }
 }
