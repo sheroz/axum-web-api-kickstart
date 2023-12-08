@@ -11,23 +11,39 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 #[test]
 #[ignore]
 fn root_path_test() {
-
     // parse configuration
     let config = config::from_dotenv();
 
-    // build the root url
+    // build the url
     let url = format!("http://{}:{}/", config.service_host, config.service_port);
-    let uri = url.parse::<hyper::Uri>().unwrap();
+
+    // fetch url
     let rt = Runtime::new().unwrap();
     let body = rt.block_on(async {
-        hyper_fetch_url(uri).await.unwrap()
+        let body1 = fetch_url_reqwest(&url).await.unwrap();
+        
+        let uri = url.parse::<hyper::Uri>().unwrap();
+        let body2 = fetch_url_hyper(uri).await.unwrap();
+
+        assert_eq!(body1, body2);
+        body2
     });
-    assert_eq!(body, "<h1>Axum-Web</h1>");
+
+    let body_expected = "<h1>Axum-Web</h1>";
+    assert_eq!(body, body_expected);
 }
 
-async fn hyper_fetch_url(url: hyper::Uri) -> Result<String> {
-    let host = url.host().expect("uri has no host");
-    let port = url.port_u16().unwrap_or(80);
+// fetch using `reqwest`
+async fn fetch_url_reqwest(url: &str) -> Result<String> {
+    let res = reqwest::get(url).await?;
+    let body = res.text().await?;
+    Ok(body)
+}
+
+// fetch using `hyper`
+async fn fetch_url_hyper(uri: hyper::Uri) -> Result<String> {
+    let host = uri.host().expect("uri has no host");
+    let port = uri.port_u16().unwrap_or(80);
     let addr = format!("{}:{}", host, port);
 
     let stream = TcpStream::connect(addr).await?;
@@ -40,11 +56,11 @@ async fn hyper_fetch_url(url: hyper::Uri) -> Result<String> {
         }
     });
 
-    let authority = url.authority().unwrap().clone();
+    let authority = uri.authority().unwrap().clone();
 
-    // Fetch the url...
+    // Fetch the url
     let req = Request::builder()
-        .uri(url)
+        .uri(uri)
         .header(hyper::header::HOST, authority.as_str())
         .body(Empty::<Bytes>::new())?;
 
@@ -52,11 +68,6 @@ async fn hyper_fetch_url(url: hyper::Uri) -> Result<String> {
 
     // asynchronously aggregate the chunks of the body
     let body = res.collect().await?.aggregate();
-
-    let mut buf = body.reader();
-    let mut dst = vec![];
-    std::io::copy(&mut buf, &mut dst).unwrap();
-    let content = String::from_utf8(dst).unwrap();
-
+    let content = String::from_utf8(body.chunk().to_vec())?;
     Ok(content)
 }
