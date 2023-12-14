@@ -1,13 +1,17 @@
 use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
+use tower_http::cors::CorsLayer;
 
-use hyper::{HeaderMap, StatusCode};
+use hyper::{
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+    HeaderMap, Method, StatusCode,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::{
-    extract::{Query, State, Request},
-    http,
+    extract::{Query, Request, State},
+    http::{self, HeaderValue},
     response::{Html, IntoResponse, Response},
     routing::{any, get},
     Router,
@@ -65,9 +69,22 @@ async fn main() {
     // run migrations
     sqlx::migrate!("db/migrations").run(&pgpool).await.unwrap();
 
-    // get service listening address
-    let addr = config.service_addr();
-    tracing::info!("listening on {}", addr);
+    // build a CORS layer
+    let cors_header_value = config.service_http_addr().parse::<HeaderValue>().unwrap();
+    let cors_layer = CorsLayer::new()
+        .allow_origin(cors_header_value)
+        .allow_methods([
+            Method::HEAD,
+            Method::GET,
+            Method::POST,
+            Method::PATCH,
+            Method::DELETE,
+        ])
+        .allow_credentials(true)
+        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
+
+    // get the listening address
+    let addr = config.service_socket_addr();
 
     // build the state
     let shared_state = Arc::new(AppState {
@@ -76,26 +93,25 @@ async fn main() {
         config,
     });
 
-    // build the service routes
-    let routes = routes(shared_state);
+    // build the app
+    let app = routes(shared_state).layer(cors_layer);
 
-    let listener = tokio::net::TcpListener::bind(&addr)
-    .await
-    .unwrap();
+    // build the listener
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    tracing::info!("listening on {}", addr);
 
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    // start the service
+    axum::serve(listener, app).await.unwrap();
 
-    axum::serve(listener, routes).await.unwrap();
-    
     /*
-        // hyper v1 => shutdown requires bilerplate logic now :(
-        // run the hyper service
-        hyper::Server::bind(&addr)
-        .serve(routes.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .unwrap();
-     */
+       // hyper v1 => shutdown requires bilerplate logic now :(
+       // run the hyper service
+       hyper::Server::bind(&addr)
+       .serve(routes.into_make_service())
+       .with_graceful_shutdown(shutdown_signal())
+       .await
+       .unwrap();
+    */
 
     tracing::info!("server shutdown successfully.");
 }
@@ -132,15 +148,13 @@ async fn head_request_handler(State(_state): State<SharedState>, method: http::M
     ([("x-some-header", "header from GET")], "body from GET").into_response()
 }
 
-
 async fn any_request_handler(
     State(_state): State<SharedState>,
     method: http::Method,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
     request: Request,
-) -> Response 
-{
+) -> Response {
     if tracing::enabled!(tracing::Level::DEBUG) {
         tracing::debug!("entered: any_request_handler()");
         tracing::debug!("method: {:?}", method);

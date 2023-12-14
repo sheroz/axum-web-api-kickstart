@@ -1,36 +1,28 @@
 use axum_web::config;
+use bytes::{Buf, Bytes};
+use http_body_util::{BodyExt, Empty};
 use hyper::Request;
 use hyper_util::rt::TokioIo;
-use tokio::runtime::Runtime;
-use http_body_util::{BodyExt, Empty};
-use bytes::{Bytes, Buf};
 use tokio::net::TcpStream;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-#[test]
+#[tokio::test]
 #[ignore]
-fn root_path_test() {
+async fn root_path_test() {
     // parse configuration
     let config = config::from_dotenv();
 
-    // build the url
-    let url = format!("http://{}:{}/", config.service_host, config.service_port);
+    let url = config.service_http_addr();
+    let expected = "<h1>Axum-Web</h1>";
 
-    // fetch url
-    let rt = Runtime::new().unwrap();
-    let body = rt.block_on(async {
-        let body1 = fetch_url_reqwest(&url).await.unwrap();
-        
-        let uri = url.parse::<hyper::Uri>().unwrap();
-        let body2 = fetch_url_hyper(uri).await.unwrap();
+    // fetch using reqwest
+    let body = fetch_url_reqwest(&url).await.unwrap();
+    assert_eq!(body, expected);
 
-        assert_eq!(body1, body2);
-        body2
-    });
-
-    let body_expected = "<h1>Axum-Web</h1>";
-    assert_eq!(body, body_expected);
+    // fetch using hyper
+    let body = fetch_url_hyper(&url).await.unwrap();
+    assert_eq!(body, expected);
 }
 
 // fetch using `reqwest`
@@ -41,7 +33,8 @@ async fn fetch_url_reqwest(url: &str) -> Result<String> {
 }
 
 // fetch using `hyper`
-async fn fetch_url_hyper(uri: hyper::Uri) -> Result<String> {
+async fn fetch_url_hyper(url: &str) -> Result<String> {
+    let uri = url.parse::<hyper::Uri>().unwrap();
     let host = uri.host().expect("uri has no host");
     let port = uri.port_u16().unwrap_or(80);
     let addr = format!("{}:{}", host, port);
