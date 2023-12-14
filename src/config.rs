@@ -17,7 +17,11 @@ pub struct Config {
     pub postgres_db: String,
 }
 impl Config {
-    pub fn service_addr(&self) -> SocketAddr {
+    pub fn service_http_addr(&self) -> String {
+        format!("http://{}:{}", self.service_host, self.service_port)
+    }
+
+    pub fn service_socket_addr(&self) -> SocketAddr {
         SocketAddr::from_str(&format!("{}:{}", self.service_host, self.service_port)).unwrap()
     }
 
