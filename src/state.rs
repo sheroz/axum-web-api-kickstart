@@ -6,6 +6,6 @@ pub type SharedState = Arc<AppState>;
 
 pub struct AppState {
     pub pgpool: Pool<Postgres>,
-    pub redis: redis::Client,
+    pub redis: redis::Connection,
     pub config: config::Config,
 }

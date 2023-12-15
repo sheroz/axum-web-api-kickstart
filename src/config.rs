@@ -1,5 +1,6 @@
 use std::{net::SocketAddr, str::FromStr};
 
+#[derive(Debug)]
 pub struct Config {
     // service
     pub service_host: String,
@@ -15,7 +16,9 @@ pub struct Config {
     pub postgres_host: String,
     pub postgres_port: u16,
     pub postgres_db: String,
+    pub postgres_connection_pool: u32
 }
+
 impl Config {
     pub fn service_http_addr(&self) -> String {
         format!("http://{}:{}", self.service_host, self.service_port)
@@ -45,7 +48,7 @@ pub fn from_dotenv() -> Config {
     dotenv::dotenv().expect("Failed to load .env file");
 
     // parse configuration
-    Config {
+    let config = Config {
         service_host: env_get("SERVICE_HOST"),
         service_port: env_parse("SERVICE_PORT"),
         redis_host: env_get("REDIS_HOST"),
@@ -55,7 +58,11 @@ pub fn from_dotenv() -> Config {
         postgres_host: env_get("POSTGRES_HOST"),
         postgres_port: env_parse("POSTGRES_PORT"),
         postgres_db: env_get("POSTGRES_DB"),
-    }
+        postgres_connection_pool: env_parse("POSTGRES_CONNECTION_POOL"),
+    };
+
+    tracing::trace!("configuration: {:#?}", config);
+    config
 }
 
 #[inline]
