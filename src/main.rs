@@ -11,12 +11,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::{
     extract::{Query, Request, State},
-    http::{self, HeaderValue},
+    http::HeaderValue,
     response::{Html, IntoResponse, Response},
     routing::{any, get},
     Router,
 };
-use redis::Connection;
+
 use sqlx::{Pool, Postgres};
 
 use axum_web::{
@@ -42,7 +42,7 @@ async fn main() {
     let config = config::from_dotenv();
 
     // connect to redis
-    let redis = connect_redis(&config);
+    let redis = connect_redis(&config).await;
 
     // connect to postgres
     let pgpool = connect_postgres(&config).await;
@@ -85,7 +85,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 
     /*
-       // hyper v1 => shutdown requires bilerplate logic now :(
+       // hyper v1 => shutdown requires boilerplate logic now :(
        // run the hyper service
        hyper::Server::bind(&addr)
        .serve(routes.into_make_service())
@@ -97,13 +97,13 @@ async fn main() {
     tracing::info!("server shutdown successfully.");
 }
 
-fn connect_redis(config: &Config) -> Connection {
+async fn connect_redis(config: &Config) -> redis::aio::Connection {
     match redis::Client::open(config.redis_url()) {
         Ok(redis) => {
-            match redis.get_connection() {
-                Ok(con) => {
+            match redis.get_async_connection().await {
+                Ok(connection) => {
                     tracing::info!("Connected to redis");
-                    con
+                    connection
                 }
                 Err(e) => {
                     tracing::error!("Could not connect to redis: {}", e);
@@ -155,13 +155,13 @@ async fn root_handler(State(_state): State<SharedState>) -> Html<&'static str> {
     Html("<h1>Axum-Web</h1>")
 }
 
-async fn head_request_handler(State(_state): State<SharedState>, method: http::Method) -> Response {
+async fn head_request_handler(State(_state): State<SharedState>, method: Method) -> Response {
     tracing::debug!("entered head_request_handler()");
     // it usually only makes sense to special-case HEAD
     // if computing the body has some relevant cost
-    if method == http::Method::HEAD {
+    if method == Method::HEAD {
         tracing::debug!("head method found");
-        return ([("x-some-header", "header from HEAD")]).into_response();
+        return [("x-some-header", "header from HEAD")].into_response();
     }
 
     ([("x-some-header", "header from GET")], "body from GET").into_response()
@@ -169,7 +169,7 @@ async fn head_request_handler(State(_state): State<SharedState>, method: http::M
 
 async fn any_request_handler(
     State(_state): State<SharedState>,
-    method: http::Method,
+    method: Method,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
     request: Request,
