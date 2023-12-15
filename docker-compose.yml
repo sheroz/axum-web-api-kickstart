@@ -17,18 +17,18 @@ services:
     ports:
       - "5432:5432"
 
-  pgadmin:
-    image: dpage/pgadmin4
-    links:
-      - postgres:postgres
-    volumes:
-      - pgadmin:/var/lib/pgadmin
-    env_file:
-      - .env
-    ports:
-      - "5050:80"
+#  pgadmin:
+#    image: dpage/pgadmin4
+#    links:
+#      - postgres:postgres
+#    volumes:
+#      - pgadmin:/var/lib/pgadmin
+#    env_file:
+#      - .env
+#    ports:
+#      - "5050:80"
 
 volumes:
   redis:
   postgres:
-  pgadmin:
+#  pgadmin:
