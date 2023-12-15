@@ -1,4 +1,4 @@
-# Web Service Sample
+# Web Service Sample in Rust
 
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
@@ -7,6 +7,7 @@ The project covers:
 
 - web service based on `axum`
   - routing
+  - `CORS` settings
   - error handling
   - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
 - connecting to `redis`
@@ -18,8 +19,6 @@ The project covers:
 - `docker-compose` configuration
   - `redis` service
   - `postgres` service
-  - `pgAdmin` service
-    - disabled login dialog (using `PGADMIN_CONFIG_SERVER_MODE` param)
 
 ## Run
 
@@ -28,11 +27,7 @@ docker-compose up -d
 cargo run
 ```
 
-### pgAdmin4
-
 link to the web app: [http://127.0.0.1:3000/](http://127.0.0.1:3000/)
-
-link to the pgAdmin4: [http://127.0.0.1:5050/](http://127.0.0.1:5050/)
 
 ## Logging
 
