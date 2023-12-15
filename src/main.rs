@@ -16,12 +16,15 @@ use axum::{
     routing::{any, get},
     Router,
 };
+use redis::Connection;
+use sqlx::{Pool, Postgres};
 
 use axum_web::{
     auth, config,
     state::{AppState, SharedState},
     user,
 };
+use axum_web::config::Config;
 
 #[tokio::main]
 async fn main() {
@@ -39,32 +42,10 @@ async fn main() {
     let config = config::from_dotenv();
 
     // connect to redis
-    let redis = match redis::Client::open(config.redis_url()) {
-        Ok(redis) => {
-            tracing::info!("Connected to redis");
-            redis
-        }
-        Err(e) => {
-            tracing::error!("Could not connect to redis: {}", e);
-            std::process::exit(1);
-        }
-    };
+    let redis = connect_redis(&config);
 
     // connect to postgres
-    let pgpool = match PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&config.postgres_url())
-        .await
-    {
-        Ok(pool) => {
-            tracing::info!("Connected to postgres");
-            pool
-        }
-        Err(e) => {
-            tracing::error!("Could not connect to postgres: {}", e);
-            std::process::exit(1);
-        }
-    };
+    let pgpool = connect_postgres(&config).await;
 
     // run migrations
     sqlx::migrate!("db/migrations").run(&pgpool).await.unwrap();
@@ -114,6 +95,44 @@ async fn main() {
     */
 
     tracing::info!("server shutdown successfully.");
+}
+
+fn connect_redis(config: &Config) -> Connection {
+    match redis::Client::open(config.redis_url()) {
+        Ok(redis) => {
+            match redis.get_connection() {
+                Ok(con) => {
+                    tracing::info!("Connected to redis");
+                    con
+                }
+                Err(e) => {
+                    tracing::error!("Could not connect to redis: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Could not open redis: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn connect_postgres(config: &Config) -> Pool<Postgres> {
+    match PgPoolOptions::new()
+        .max_connections(config.postgres_connection_pool)
+        .connect(&config.postgres_url())
+        .await
+    {
+        Ok(pool) => {
+            tracing::info!("Connected to postgres");
+            pool
+        }
+        Err(e) => {
+            tracing::error!("Could not connect to postgres: {}", e);
+            std::process::exit(1);
+        }
+    }
 }
 
 fn routes(state: SharedState) -> Router {
@@ -179,7 +198,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(unix)]
-    let terminate = async {
+        let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -187,7 +206,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+        let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},

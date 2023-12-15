@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::{get, post},
     Router,
 };
@@ -14,12 +14,12 @@ pub fn routes() -> Router<SharedState> {
         .route("/logout", get(logout_handler))
 }
 
-async fn login_handler(State(_state): State<SharedState>) -> Response {
+async fn login_handler(State(_state): State<SharedState>) -> impl IntoResponse {
     tracing::debug!("entered: handler_get_login()");
-    (StatusCode::FORBIDDEN, "forbidden").into_response()
+    StatusCode::FORBIDDEN
 }
 
-async fn logout_handler(State(_state): State<SharedState>) -> Response {
+async fn logout_handler(State(_state): State<SharedState>) -> impl IntoResponse {
     tracing::debug!("entered: handler_post_login()");
-    (StatusCode::FORBIDDEN, "forbidden").into_response()
+    StatusCode::FORBIDDEN
 }
