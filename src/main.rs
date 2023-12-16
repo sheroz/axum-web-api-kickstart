@@ -6,9 +6,17 @@ use tower_http::cors::{Any, CorsLayer};
 use hyper::{
     HeaderMap, Method, StatusCode,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use axum::{extract::{Query, Request, State}, response::{Html, IntoResponse, Response}, routing::{any, get}, Router, Json};
+use tracing_subscriber::{
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+};
+use axum::{
+    extract::{Query, Request, State},
+    middleware::{self, Next},
+    response::{Html, IntoResponse, Response},
+    routing::{any, get}, Router, Json,
+};
+use axum::body::Body;
 
 use sqlx::{Pool, Postgres};
 
@@ -68,8 +76,9 @@ async fn main() {
     });
 
     // build the app
-    let app = routes(shared_state).layer(cors_layer);
-
+    let app = routes(shared_state)
+        .layer(cors_layer)
+        .layer(middleware::from_fn(logging_middleware));
     // build the listener
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     tracing::info!("listening on {}", addr);
@@ -142,6 +151,11 @@ fn routes(state: SharedState) -> Router {
         // nesting the user related routes under `/user`
         .nest("/users", users::routes())
         .with_state(state)
+}
+
+async fn logging_middleware(request: Request<Body>, next: Next) -> Response {
+    tracing::trace!("Received a {} request to {}", request.method(), request.uri());
+    next.run(request).await
 }
 
 async fn heartbeat_handler(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
