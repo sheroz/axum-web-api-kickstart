@@ -1,30 +1,22 @@
 use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashMap, sync::Arc};
 use tokio::signal;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 use hyper::{
-    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     HeaderMap, Method, StatusCode,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use axum::{
-    extract::{Query, Request, State},
-    http::HeaderValue,
-    response::{Html, IntoResponse, Response},
-    routing::{any, get},
-    Router,
-};
+use axum::{extract::{Query, Request, State}, response::{Html, IntoResponse, Response}, routing::{any, get}, Router, Json};
 
 use sqlx::{Pool, Postgres};
 
 use axum_web::{
-    auth, config,
+    auth, config::{self, Config},
     state::{AppState, SharedState},
-    user,
+    users,
 };
-use axum_web::config::Config;
 
 #[tokio::main]
 async fn main() {
@@ -51,18 +43,19 @@ async fn main() {
     sqlx::migrate!("db/migrations").run(&pgpool).await.unwrap();
 
     // build a CORS layer
-    let cors_header_value = config.service_http_addr().parse::<HeaderValue>().unwrap();
-    let cors_layer = CorsLayer::new()
-        .allow_origin(cors_header_value)
-        .allow_methods([
-            Method::HEAD,
-            Method::GET,
-            Method::POST,
-            Method::PATCH,
-            Method::DELETE,
-        ])
-        .allow_credentials(true)
-        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
+    let cors_layer = CorsLayer::new().allow_origin(Any);
+    // let cors_header_value = config.service_http_addr().parse::<HeaderValue>().unwrap();
+    // let cors_layer = CorsLayer::new()
+    //      .allow_origin(cors_header_value)
+    //      .allow_methods([
+    //          Method::HEAD,
+    //          Method::GET,
+    //          Method::POST,
+    //          Method::PATCH,
+    //          Method::DELETE,
+    //      ])
+    //      .allow_credentials(true)
+    //      .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
     // get the listening address
     let addr = config.service_socket_addr();
@@ -141,13 +134,29 @@ fn routes(state: SharedState) -> Router {
         // add a fallback service for handling routes to unknown paths
         .fallback(error_404_handler)
         .route("/", get(root_handler))
+        .route("/heartbeat", get(heartbeat_handler))
         .route("/head", get(head_request_handler))
         .route("/any", any(any_request_handler))
         // nesting the authentication related routes under `/auth`
         .nest("/auth", auth::routes())
         // nesting the user related routes under `/user`
-        .nest("/user", user::routes())
+        .nest("/users", users::routes())
         .with_state(state)
+}
+
+async fn heartbeat_handler(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
+    const QUERY_PARAM_ID: &str = "id";
+    let mut map = HashMap::from(
+        [("service", "axum-web"),
+            ("status", "success")]
+    );
+
+    if params.contains_key(QUERY_PARAM_ID) {
+        map.insert(QUERY_PARAM_ID, params.get(QUERY_PARAM_ID).unwrap());
+    }
+
+    let map: HashMap<String, String> = map.iter().map(|v| (v.0.to_string(), v.1.to_string())).collect();
+    Json(map)
 }
 
 async fn root_handler(State(_state): State<SharedState>) -> Html<&'static str> {
