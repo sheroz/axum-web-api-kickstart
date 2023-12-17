@@ -1,20 +1,20 @@
 -- create users table
 CREATE TABLE users
 (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username    TEXT        NOT NULL,
-    email       TEXT UNIQUE NOT NULL,
-    pswd_hash   TEXT        NOT NULL,
-    pswd_salt   TEXT        NOT NULL,
-    created_at  TIMESTAMP   NOT NULL,
-    updated_at  TIMESTAMP   NOT NULL
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username      TEXT        NOT NULL,
+    email         TEXT UNIQUE NOT NULL,
+    password_hash TEXT        NOT NULL,
+    password_salt TEXT        NOT NULL,
+    created_at    TIMESTAMP   NOT NULL,
+    updated_at    TIMESTAMP   NOT NULL
 );
 
 -- populate users table
 INSERT INTO users (username,
                    email,
-                   pswd_hash,
-                   pswd_salt,
+                   password_hash,
+                   password_salt,
                    created_at,
                    updated_at)
 VALUES ('admin',
