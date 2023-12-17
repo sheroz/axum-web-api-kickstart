@@ -1,3 +1,4 @@
+-- create users table
 CREATE TABLE users
 (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -5,13 +6,11 @@ CREATE TABLE users
     email       TEXT UNIQUE NOT NULL,
     pswd_hash   TEXT        NOT NULL,
     pswd_salt   TEXT        NOT NULL,
-    -- limit access rate
-    last_access TIMESTAMP,
     created_at  TIMESTAMP   NOT NULL,
-    updated_at  TIMESTAMP   NOT NULL,
-    deleted_at  TIMESTAMP
+    updated_at  TIMESTAMP   NOT NULL
 );
 
+-- populate users table
 INSERT INTO users (username,
                    email,
                    pswd_hash,

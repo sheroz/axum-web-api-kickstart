@@ -17,6 +17,7 @@ use axum::{
     routing::{any, get}, Router, Json,
 };
 use axum::body::Body;
+use axum::extract::Path;
 
 use sqlx::{Pool, Postgres};
 
@@ -143,7 +144,7 @@ fn routes(state: SharedState) -> Router {
         // add a fallback service for handling routes to unknown paths
         .fallback(error_404_handler)
         .route("/", get(root_handler))
-        .route("/heartbeat", get(heartbeat_handler))
+        .route("/heartbeat/:id", get(heartbeat_handler))
         .route("/head", get(head_request_handler))
         .route("/any", any(any_request_handler))
         // nesting the authentication related routes under `/auth`
@@ -158,18 +159,10 @@ async fn logging_middleware(request: Request<Body>, next: Next) -> Response {
     next.run(request).await
 }
 
-async fn heartbeat_handler(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
-    const QUERY_PARAM_ID: &str = "id";
-    let mut map = HashMap::from(
-        [("service", "axum-web"),
-            ("status", "success")]
-    );
-
-    if params.contains_key(QUERY_PARAM_ID) {
-        map.insert(QUERY_PARAM_ID, params.get(QUERY_PARAM_ID).unwrap());
-    }
-
-    let map: HashMap<String, String> = map.iter().map(|v| (v.0.to_string(), v.1.to_string())).collect();
+async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
+    let map = HashMap::from([
+        ("service".to_string(), "axum-web".to_string()),
+        ("heartbeat-id".to_string(), id)]);
     Json(map)
 }
 
