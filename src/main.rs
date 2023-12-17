@@ -22,9 +22,10 @@ use axum::extract::Path;
 use sqlx::{Pool, Postgres};
 
 use axum_web::{
-    auth, config::{self, Config},
+    auth,
+    config::{self, Config},
     state::{AppState, SharedState},
-    users,
+    api::users
 };
 
 #[tokio::main]
