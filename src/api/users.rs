@@ -64,13 +64,10 @@ async fn update_user_handler(Path(id): Path<Uuid>, State(state): State<SharedSta
 async fn delete_user_handler(Path(id): Path<Uuid>, State(state): State<SharedState>) -> impl IntoResponse {
     tracing::debug!("entered: handler_delete_user({})", id);
     match delete_user(id, state).await {
-        Some(rows_affected) => {
-            if rows_affected == 0 {
-                tracing::warn!("User not found for deletion: {}", id);
-                StatusCode::NOT_FOUND
-            } else {
-                StatusCode::OK
-            }
+        Some(true) => StatusCode::OK,
+        Some(false) => {
+            tracing::warn!("User not found for deletion: {}", id);
+            StatusCode::NOT_FOUND
         }
         None => {
             StatusCode::INTERNAL_SERVER_ERROR

@@ -22,8 +22,8 @@ pub async fn add_user(user: User, state: SharedState) -> Option<User> {
         r#"INSERT INTO users (id,
          username,
          email,
-         pswd_hash,
-         pswd_salt,
+         password_hash,
+         password_salt,
          created_at,
          updated_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -31,8 +31,8 @@ pub async fn add_user(user: User, state: SharedState) -> Option<User> {
         .bind(user.id)
         .bind(user.username)
         .bind(user.email)
-        .bind(user.pswd_hash)
-        .bind(user.pswd_salt)
+        .bind(user.password_hash)
+        .bind(user.password_salt)
         .bind(time_now)
         .bind(time_now)
         .fetch_one(&state.pgpool)
@@ -73,16 +73,16 @@ pub async fn update_user(id: Uuid, user: User, state: SharedState) -> Option<Use
          SET id = $1,
          username = $2,
          email = $3,
-         pswd_hash = $4,
-         pswd_salt = $5,
+         password_hash = $4,
+         password_salt = $5,
          updated_at = $6
          WHERE id = $7
          RETURNING users.*"#)
         .bind(user.id)
         .bind(user.username)
         .bind(user.email)
-        .bind(user.pswd_hash)
-        .bind(user.pswd_salt)
+        .bind(user.password_hash)
+        .bind(user.password_salt)
         .bind(time_now)
         .bind(id)
         .fetch_one(&state.pgpool)
@@ -99,14 +99,14 @@ pub async fn update_user(id: Uuid, user: User, state: SharedState) -> Option<Use
     }
 }
 
-pub async fn delete_user(id: Uuid, state: SharedState) -> Option<u64> {
+pub async fn delete_user(id: Uuid, state: SharedState) -> Option<bool> {
     let query_delete = sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(id)
         .execute(&state.pgpool)
         .await;
 
     match query_delete {
-        Ok(row) => Some(row.rows_affected()),
+        Ok(row) => Some(row.rows_affected() == 1),
         Err(e) => {
             tracing::error!("{}", e);
             None
