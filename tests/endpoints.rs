@@ -1,4 +1,4 @@
-use axum_web::config;
+use axum_web::shared::config;
 use bytes::{Buf, Bytes};
 use http_body_util::{BodyExt, Empty};
 use hyper::Request;
