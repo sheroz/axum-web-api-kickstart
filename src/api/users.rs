@@ -7,9 +7,9 @@ use axum::{
 };
 use sqlx::types::Uuid;
 
-use crate::model::user::User;
-use crate::repository::user_repository::*;
-use crate::state::SharedState;
+use crate::domain::model::user::User;
+use crate::application::repository::user_repository::*;
+use crate::shared::state::SharedState;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
