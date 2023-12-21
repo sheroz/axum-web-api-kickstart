@@ -25,7 +25,7 @@ serde_json = "1.0"
 uuid = { version = "1.6", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
-redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+redis = { version = "0.24", features = ["tokio-comp"] }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "macros", "chrono"] }
 
 jsonwebtoken = { version = "9" }
