@@ -1,4 +1,4 @@
-# Web Service Sample in Rust
+# Getting started with Web Service in Rust
 
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
@@ -7,13 +7,14 @@ The project covers:
 
 - web service based on `axum`
   - routing
-  - `CORS` settings
+  - CORS settings
   - error handling
   - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
-- connecting to `redis`
-- connecting to `postgres`
+- connecting to `postgres` using `sqlx`
   - connection pooling
   - migrations
+  - CRUD operations
+- connecting to `redis`
 - parsing `.env` based configuration
 - `tracing` based logs
 - `docker-compose` configuration
