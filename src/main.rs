@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use tokio::signal;
+use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{
     layer::SubscriberExt,
@@ -33,7 +34,7 @@ async fn main() {
     let config = config::from_dotenv();
 
     // connect to redis
-    let redis = redis::get_connection_manager(&config).await;
+    let redis = redis::open(&config).await;
 
     // connect to postgres
     let pgpool = postgres::pgpool(&config).await;
@@ -64,7 +65,7 @@ async fn main() {
     // build the state
     let shared_state = Arc::new(AppState {
         pgpool,
-        redis,
+        redis: Mutex::new(redis),
         config,
     });
 

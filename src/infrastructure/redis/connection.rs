@@ -1,7 +1,8 @@
 use crate::shared::config::Config;
+use redis::aio::Connection;
 use redis::aio::ConnectionManager;
 
-pub async fn open(config: &Config) -> redis::aio::Connection {
+pub async fn open(config: &Config) -> Connection {
     match redis::Client::open(config.redis_url()) {
         Ok(redis) => {
             match redis.get_async_connection().await {

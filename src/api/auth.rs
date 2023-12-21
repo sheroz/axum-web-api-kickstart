@@ -5,6 +5,10 @@ use serde_json::json;
 use crate::application::repository::user_repository::get_user_by_username;
 use crate::shared::state::SharedState;
 use jsonwebtoken as jwt;
+use redis::{
+    RedisResult,
+    AsyncCommands,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LoginUser {
@@ -43,11 +47,26 @@ async fn login_handler(State(state): State<SharedState>, Json(login): Json<Login
                 &jwt::EncodingKey::from_secret(state.config.jwt_secret.as_ref()),
             ).unwrap();
 
-            // use redis::AsyncCommands;
-            // let _: ()  = state.redis.sadd("sessions".to_string(), user.id.to_string()).await.unwrap();
+            let mut redis = state.redis.lock().await;
+            let redis_result: RedisResult<()> = redis.sadd("sessions".to_string(), user.id.to_string()).await;
+            if let Err(e) = redis_result {
+                tracing::error!("{}", e);
+                return StatusCode::FORBIDDEN.into_response();
+            }
+
+            let redis_result: RedisResult<Vec<String>> = redis.smembers("sessions".to_string()).await;
+            match redis_result {
+                Ok(sessions) => {
+                    tracing::trace!("redis -> stored sessions: {:#?}", sessions);
+                }
+                Err(e) => {
+                    tracing::error!("{}", e);
+                    return StatusCode::FORBIDDEN.into_response();
+                }
+            }
 
             let json = json!({"access_token": access_token, "token_type": "Bearer"});
-            return Json(json).into_response()
+            return Json(json).into_response();
         }
     }
     StatusCode::FORBIDDEN.into_response()
