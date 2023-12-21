@@ -22,7 +22,7 @@ pub fn routes(state: SharedState) -> Router {
         .route("/head", get(head_request_handler))
         .route("/any", any(any_request_handler))
         // nesting the authentication related routes under `/auth`
-        .nest("/auth", auth::routes())
+        .nest("/", auth::routes())
         // nesting the user related routes under `/user`
         .nest("/users", users::routes())
         .with_state(state)

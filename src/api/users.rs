@@ -22,7 +22,7 @@ pub fn routes() -> Router<SharedState> {
 
 async fn list_users_handler(State(state): State<SharedState>) -> Result<Json<Vec<User>>, impl IntoResponse> {
     tracing::debug!("entered: handler_list_users()");
-    match all_users(state).await {
+    match all_users(&state).await {
         Some(users) => Ok(Json(users)),
         None => Err(StatusCode::NOT_FOUND)
     }
@@ -30,7 +30,7 @@ async fn list_users_handler(State(state): State<SharedState>) -> Result<Json<Vec
 
 async fn add_user_handler(State(state): State<SharedState>, Json(user): Json<User>) -> impl IntoResponse {
     tracing::debug!("entered: handler_add_user()");
-    match add_user(user, state).await {
+    match add_user(user, &state).await {
         Some(user) => {
             (StatusCode::CREATED, Json(user)).into_response()
         }
@@ -42,7 +42,7 @@ async fn add_user_handler(State(state): State<SharedState>, Json(user): Json<Use
 
 async fn get_user_handler(Path(id): Path<Uuid>, State(state): State<SharedState>) -> Result<Json<User>, impl IntoResponse> {
     tracing::debug!("entered: handler_get_user({})", id);
-    match get_user(id, state).await
+    match get_user(id, &state).await
     {
         Some(user) => Ok(Json(user)),
         None => Err(StatusCode::NOT_FOUND)
@@ -51,7 +51,7 @@ async fn get_user_handler(Path(id): Path<Uuid>, State(state): State<SharedState>
 
 async fn update_user_handler(Path(id): Path<Uuid>, State(state): State<SharedState>, Json(user): Json<User>) -> Result<Json<User>, impl IntoResponse> {
     tracing::debug!("entered: update_user_handler({})", id);
-    match update_user(id, user, state).await {
+    match update_user(id, user, &state).await {
         Some(user) => {
             Ok(Json(user))
         }
@@ -63,7 +63,7 @@ async fn update_user_handler(Path(id): Path<Uuid>, State(state): State<SharedSta
 
 async fn delete_user_handler(Path(id): Path<Uuid>, State(state): State<SharedState>) -> impl IntoResponse {
     tracing::debug!("entered: handler_delete_user({})", id);
-    match delete_user(id, state).await {
+    match delete_user(id, &state).await {
         Some(true) => StatusCode::OK,
         Some(false) => {
             tracing::warn!("User not found for deletion: {}", id);

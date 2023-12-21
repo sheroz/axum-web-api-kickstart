@@ -16,7 +16,10 @@ pub struct Config {
     pub postgres_host: String,
     pub postgres_port: u16,
     pub postgres_db: String,
-    pub postgres_connection_pool: u32
+    pub postgres_connection_pool: u32,
+
+    // JWT
+    pub jwt_secret: String
 }
 
 impl Config {
@@ -60,6 +63,7 @@ pub fn from_dotenv() -> Config {
         postgres_port: env_parse("POSTGRES_PORT"),
         postgres_db: env_get("POSTGRES_DB"),
         postgres_connection_pool: env_parse("POSTGRES_CONNECTION_POOL"),
+        jwt_secret: env_get("JWT_SECRET"),
     };
 
     tracing::trace!("configuration: {:#?}", config);

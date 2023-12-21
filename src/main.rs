@@ -33,7 +33,7 @@ async fn main() {
     let config = config::from_dotenv();
 
     // connect to redis
-    let redis = redis::open(&config).await;
+    let redis = redis::get_connection_manager(&config).await;
 
     // connect to postgres
     let pgpool = postgres::pgpool(&config).await;
@@ -42,6 +42,8 @@ async fn main() {
     sqlx::migrate!("src/infrastructure/postgres/migrations").run(&pgpool).await.unwrap();
 
     // build a CORS layer
+    // see https://docs.rs/tower-http/latest/tower_http/cors/index.html
+    // for more details
     let cors_layer = CorsLayer::new().allow_origin(Any);
     // let cors_header_value = config.service_http_addr().parse::<HeaderValue>().unwrap();
     // let cors_layer = CorsLayer::new()
