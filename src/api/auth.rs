@@ -6,7 +6,7 @@ use axum::{
 };
 use hyper::StatusCode;
 
-use crate::state::SharedState;
+use crate::shared::state::SharedState;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -15,11 +15,11 @@ pub fn routes() -> Router<SharedState> {
 }
 
 async fn login_handler(State(_state): State<SharedState>) -> impl IntoResponse {
-    tracing::debug!("entered: handler_get_login()");
+    tracing::debug!("entered: login_handler()");
     StatusCode::FORBIDDEN
 }
 
 async fn logout_handler(State(_state): State<SharedState>) -> impl IntoResponse {
-    tracing::debug!("entered: handler_post_login()");
+    tracing::debug!("entered: logout_handler()");
     StatusCode::FORBIDDEN
 }

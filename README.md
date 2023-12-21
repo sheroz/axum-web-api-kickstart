@@ -5,17 +5,18 @@
 
 The project covers:
 
-- web service based on `axum`
+- Web service based on `axum`
   - routing
   - CORS settings
   - error handling
   - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
-- connecting to `postgres` using `sqlx`
-  - connection pooling
+- Using `PostgreSQL`database with `sqlx` driver
   - migrations
-  - CRUD operations
-- connecting to `redis`
-- parsing `.env` based configuration
+  - async connection pooling
+  - async CRUD operations
+- Using `Redis`
+  - async operations
+- `.env` based configuration parsing
 - `tracing` based logs
 - `docker-compose` configuration
   - `redis` service
