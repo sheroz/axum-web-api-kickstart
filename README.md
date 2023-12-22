@@ -1,11 +1,13 @@
-# Getting started with Web Service in Rust
+# Getting started with Web Services in Rust
+
+(using `axum`, `sqlx`, `postgres`, and `redis`)
 
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
 
 The project covers:
 
-- Web service based on `axum`
+- REST API based on `axum`
   - routing
   - CORS settings
   - error handling
