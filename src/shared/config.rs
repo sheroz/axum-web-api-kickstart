@@ -19,7 +19,7 @@ pub struct Config {
     pub postgres_connection_pool: u32,
 
     // JWT
-    pub jwt_secret: String
+    pub jwt_secret: String,
 }
 
 impl Config {

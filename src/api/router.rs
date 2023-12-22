@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use axum::{
-    middleware::Next,
-    http::{HeaderMap, Method, StatusCode},
     body::Body,
-    Json,
-    Router,
-    response::{Html, IntoResponse, Response},
     extract::{Path, Query, Request, State},
+    http::{HeaderMap, Method, StatusCode},
+    middleware::Next,
+    response::{Html, IntoResponse, Response},
     routing::{any, get},
+    Json, Router,
 };
+use std::collections::HashMap;
+
 use super::{auth, users};
 use crate::shared::state::SharedState;
 
@@ -29,14 +29,19 @@ pub fn routes(state: SharedState) -> Router {
 }
 
 pub async fn logging_middleware(request: Request<Body>, next: Next) -> Response {
-    tracing::trace!("Received a {} request to {}", request.method(), request.uri());
+    tracing::trace!(
+        "Received a {} request to {}",
+        request.method(),
+        request.uri()
+    );
     next.run(request).await
 }
 
 async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     let map = HashMap::from([
         ("service".to_string(), "axum-web".to_string()),
-        ("heartbeat-id".to_string(), id)]);
+        ("heartbeat-id".to_string(), id),
+    ]);
     Json(map)
 }
 

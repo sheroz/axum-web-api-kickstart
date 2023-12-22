@@ -1,22 +1,12 @@
-use std::sync::Arc;
-use tokio::signal;
-use tokio::sync::Mutex;
-use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-};
 use axum_web::{
     api::router,
-    shared::{
-        config,
-        state::AppState,
-    },
-    infrastructure::{
-        postgres,
-        redis,
-    },
+    infrastructure::{postgres, redis},
+    shared::{config, state::AppState},
 };
+use std::sync::Arc;
+use tokio::{signal, sync::Mutex};
+use tower_http::cors::{Any, CorsLayer};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
@@ -40,7 +30,10 @@ async fn main() {
     let pgpool = postgres::pgpool(&config).await;
 
     // run migrations
-    sqlx::migrate!("src/infrastructure/postgres/migrations").run(&pgpool).await.unwrap();
+    sqlx::migrate!("src/infrastructure/postgres/migrations")
+        .run(&pgpool)
+        .await
+        .unwrap();
 
     // build a CORS layer
     // see https://docs.rs/tower-http/latest/tower_http/cors/index.html
@@ -102,7 +95,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(unix)]
-        let terminate = async {
+    let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -110,7 +103,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},

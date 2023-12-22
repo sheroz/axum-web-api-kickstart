@@ -1,0 +1,55 @@
+POST http://127.0.0.1:3000/login HTTP/1.1
+Content-type: application/json; charset=utf8
+
+{
+    "username": "admin",
+    "password_hash": "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51"
+}
+
+###
+
+DELETE http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
+
+###
+
+PUT http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
+Content-type: application/json; charset=utf8
+
+{
+    "id": "917646a0-7437-48a0-bb03-a7aa830f8f81",
+    "username": "admin21",
+    "email": "admin21@admin.com",
+    "password_hash": "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51",
+    "password_salt": "pjZKk6A8YtC8$9p&UIp62bv4PLwD7@dF"
+}
+
+###
+
+POST http://127.0.0.1:3000/users
+Content-type: application/json; charset=utf8
+
+{
+    "id": "917646a0-7437-48a0-bb03-a7aa830f8f81",
+    "username": "admin2",
+    "email": "admin2@admin.com",
+    "password_hash": "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51",
+    "password_salt": "pjZKk6A8YtC8$9p&UIp62bv4PLwD7@dF"
+}
+
+###
+
+GET http://127.0.0.1:3000/users/617646a0-7437-48a0-bb03-a7aa830f8f81
+
+###
+
+GET http://127.0.0.1:3000/users
+
+###
+
+GET http://127.0.0.1:3000/heartbeat/1
+
+### 
+
+GET http://127.0.0.1:3000
+
+###
