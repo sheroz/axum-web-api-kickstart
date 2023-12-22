@@ -43,4 +43,4 @@ RUST_LOG=info,hyper=debug,axum_web=trace cargo run
 
 ## Project Stage
 
-**Development**: this project is under development, you should not expect stability.
+**Development**: this project is under development, you should not expect stability yet.
