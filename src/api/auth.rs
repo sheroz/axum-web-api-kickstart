@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::{
-    application::repository::user_repository::get_user_by_username, shared::state::SharedState,
+    application::repository::user_repository::get_user_by_username,
+    shared::{config, state::SharedState},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -51,7 +52,7 @@ async fn login_handler(
             let access_token = jwt::encode(
                 &jwt::Header::default(),
                 &jwt_claims,
-                &jwt::EncodingKey::from_secret(state.config.jwt_secret.as_ref()),
+                &jwt::EncodingKey::from_secret(config::get().jwt_secret.as_ref()),
             )
             .unwrap();
 
@@ -87,3 +88,21 @@ async fn logout_handler(State(_state): State<SharedState>) -> impl IntoResponse 
     tracing::debug!("entered: logout_handler()");
     StatusCode::FORBIDDEN
 }
+
+// #[async_trait]
+// impl<B> FromRequest<B> for JwtClaims
+// where
+//     B: Send,
+// {
+//     type Rejection = AppError;
+
+//     async fn from_request(request: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+//         let TypedHeader(Authorization(bearer)) =
+//             TypedHeader::<Authorization<Bearer>>::from_request(request)
+//                 .await
+//                 .map_err(|_| AppError::InvalidToken)?;
+//         let data = jwt::decode::<JwtClaims>(bearer.token(), &KEYS.decoding, &jwt::Validation::default())
+//             .map_err(|_| AppError::InvalidToken)?;
+//         Ok(data.claims)
+//     }
+// }

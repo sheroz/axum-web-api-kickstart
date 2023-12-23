@@ -20,14 +20,15 @@ async fn main() {
 
     tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
-    // parse configuration
-    let config = config::from_dotenv();
+    // load configuration
+    config::load_from_dotenv();
+    let config = config::get();
 
     // connect to redis
-    let redis = redis::open(&config).await;
+    let redis = redis::open(config).await;
 
     // connect to postgres
-    let pgpool = postgres::pgpool(&config).await;
+    let pgpool = postgres::pgpool(config).await;
 
     // run migrations
     sqlx::migrate!("src/infrastructure/postgres/migrations")
@@ -59,7 +60,6 @@ async fn main() {
     let shared_state = Arc::new(AppState {
         pgpool,
         redis: Mutex::new(redis),
-        config,
     });
 
     // build the app

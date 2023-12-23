@@ -10,8 +10,9 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 #[tokio::test]
 #[ignore]
 async fn root_path_test() {
-    // parse configuration
-    let config = config::from_dotenv();
+    // load configuration
+    config::load_from_dotenv();
+    let config = config::CONFIG.get().unwrap();
 
     let url = config.service_http_addr();
     let expected = "<h1>Axum-Web</h1>";

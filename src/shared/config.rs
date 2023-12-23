@@ -1,4 +1,6 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::OnceLock};
+
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct Config {
@@ -47,7 +49,8 @@ impl Config {
         )
     }
 }
-pub fn from_dotenv() -> Config {
+
+pub fn load_from_dotenv() {
     // load .env file
     dotenv::dotenv().expect("Failed to load .env file");
 
@@ -67,7 +70,11 @@ pub fn from_dotenv() -> Config {
     };
 
     tracing::trace!("configuration: {:#?}", config);
-    config
+    CONFIG.get_or_init(||config);
+}
+
+pub fn get() -> &'static Config {
+    CONFIG.get().unwrap()
 }
 
 #[inline]
