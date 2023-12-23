@@ -11,13 +11,14 @@ The project covers:
   - routing
   - CORS settings
   - error handling
-  - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
+  - graceful shutdown (!!! does not work since upgrading to axum 0.7 and hyper 1.0 !!!)
 - Using `PostgreSQL`database with `sqlx` driver
   - migrations
   - async connection pooling
   - async CRUD operations
 - Using `Redis`
   - async operations
+- Authentication based on `JWT` 
 - `.env` based configuration parsing
 - `tracing` based logs
 - `docker-compose` configuration
