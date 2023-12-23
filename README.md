@@ -32,7 +32,7 @@ docker-compose up -d
 cargo run
 ```
 
-link to the web app: [http://127.0.0.1:3000/](http://127.0.0.1:3000/)
+REST API test samples: [/tests/endpoints.http](/tests/endpoints.http)
 
 ## Logging
 
