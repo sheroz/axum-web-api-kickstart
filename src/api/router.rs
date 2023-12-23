@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use axum::{
-    middleware::Next,
-    http::{HeaderMap, Method, StatusCode},
     body::Body,
-    Json,
-    Router,
-    response::{Html, IntoResponse, Response},
     extract::{Path, Query, Request, State},
+    http::{HeaderMap, Method, StatusCode},
+    middleware::Next,
+    response::{Html, IntoResponse, Response},
     routing::{any, get},
+    Json, Router,
 };
+use std::collections::HashMap;
+
 use super::{auth, users};
 use crate::shared::state::SharedState;
 
@@ -22,21 +22,26 @@ pub fn routes(state: SharedState) -> Router {
         .route("/head", get(head_request_handler))
         .route("/any", any(any_request_handler))
         // nesting the authentication related routes under `/auth`
-        .nest("/auth", auth::routes())
+        .nest("/", auth::routes())
         // nesting the user related routes under `/user`
         .nest("/users", users::routes())
         .with_state(state)
 }
 
 pub async fn logging_middleware(request: Request<Body>, next: Next) -> Response {
-    tracing::trace!("Received a {} request to {}", request.method(), request.uri());
+    tracing::trace!(
+        "Received a {} request to {}",
+        request.method(),
+        request.uri()
+    );
     next.run(request).await
 }
 
 async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     let map = HashMap::from([
         ("service".to_string(), "axum-web".to_string()),
-        ("heartbeat-id".to_string(), id)]);
+        ("heartbeat-id".to_string(), id),
+    ]);
     Json(map)
 }
 

@@ -1,21 +1,12 @@
-use std::sync::Arc;
-use tokio::signal;
-use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-};
 use axum_web::{
     api::router,
-    shared::{
-        config,
-        state::AppState,
-    },
-    infrastructure::{
-        postgres,
-        redis,
-    },
+    infrastructure::{postgres, redis},
+    shared::{config, state::AppState},
 };
+use std::sync::Arc;
+use tokio::{signal, sync::Mutex};
+use tower_http::cors::{Any, CorsLayer};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
@@ -29,19 +20,25 @@ async fn main() {
 
     tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
-    // parse configuration
-    let config = config::from_dotenv();
+    // load configuration
+    config::load_from_dotenv();
+    let config = config::get();
 
     // connect to redis
-    let redis = redis::open(&config).await;
+    let redis = redis::open(config).await;
 
     // connect to postgres
-    let pgpool = postgres::pgpool(&config).await;
+    let pgpool = postgres::pgpool(config).await;
 
     // run migrations
-    sqlx::migrate!("src/infrastructure/postgres/migrations").run(&pgpool).await.unwrap();
+    sqlx::migrate!("src/infrastructure/postgres/migrations")
+        .run(&pgpool)
+        .await
+        .unwrap();
 
     // build a CORS layer
+    // see https://docs.rs/tower-http/latest/tower_http/cors/index.html
+    // for more details
     let cors_layer = CorsLayer::new().allow_origin(Any);
     // let cors_header_value = config.service_http_addr().parse::<HeaderValue>().unwrap();
     // let cors_layer = CorsLayer::new()
@@ -62,8 +59,7 @@ async fn main() {
     // build the state
     let shared_state = Arc::new(AppState {
         pgpool,
-        redis,
-        config,
+        redis: Mutex::new(redis),
     });
 
     // build the app
@@ -99,7 +95,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(unix)]
-        let terminate = async {
+    let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -107,7 +103,7 @@ async fn _shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},
