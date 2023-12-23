@@ -1,3 +1,9 @@
+GET http://127.0.0.1:3000/logout HTTP/1.1
+Content-type: application/json; charset=utf8
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJpYXQiOjE3MDMyOTU2NzAsImV4cCI6MTcwMzI5OTI3MH0.Waf7KKejirn6-WVzmbV1yLgf0nWHZyL-u7y2T7Qv7no
+
+###
+
 POST http://127.0.0.1:3000/login HTTP/1.1
 Content-type: application/json; charset=utf8
 

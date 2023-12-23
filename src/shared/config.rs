@@ -1,3 +1,5 @@
+use core::fmt;
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::{net::SocketAddr, sync::OnceLock};
 
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
@@ -22,6 +24,29 @@ pub struct Config {
 
     // JWT
     pub jwt_secret: String,
+    pub jwt_keys: JwtKeys,
+}
+
+pub struct JwtKeys {
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
+}
+
+// a blank impl fmt::Debug for JwtKeys
+// there is no debug(skip) option for #[derive(Debug)] currently in Rust 1.74
+impl fmt::Debug for JwtKeys {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("JwtKeys").finish()
+    }
+}
+
+impl JwtKeys {
+    fn new(secret: &[u8]) -> Self {
+        Self {
+            encoding: EncodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
+        }
+    }
 }
 
 impl Config {
@@ -54,6 +79,8 @@ pub fn load_from_dotenv() {
     // load .env file
     dotenv::dotenv().expect("Failed to load .env file");
 
+    let jwt_secret = env_get("JWT_SECRET");
+
     // parse configuration
     let config = Config {
         service_host: env_get("SERVICE_HOST"),
@@ -66,11 +93,12 @@ pub fn load_from_dotenv() {
         postgres_port: env_parse("POSTGRES_PORT"),
         postgres_db: env_get("POSTGRES_DB"),
         postgres_connection_pool: env_parse("POSTGRES_CONNECTION_POOL"),
-        jwt_secret: env_get("JWT_SECRET"),
+        jwt_keys: JwtKeys::new(jwt_secret.as_bytes()),
+        jwt_secret,
     };
 
     tracing::trace!("configuration: {:#?}", config);
-    CONFIG.get_or_init(||config);
+    CONFIG.get_or_init(|| config);
 }
 
 pub fn get() -> &'static Config {
