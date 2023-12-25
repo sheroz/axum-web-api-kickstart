@@ -1,8 +1,8 @@
-### Heartbeat check
+### heartbeat check (public)
 GET http://127.0.0.1:3000/heartbeat/1
 
-### Login 
-POST http://127.0.0.1:3000/login HTTP/1.1
+### login 
+POST http://127.0.0.1:3000/auth/login HTTP/1.1
 Content-type: application/json; charset=utf8
 
 {
@@ -10,23 +10,23 @@ Content-type: application/json; charset=utf8
     "password_hash": "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51"
 }
 
-### Test sample protected 
-GET http://127.0.0.1:3000/sample_protected HTTP/1.1
+### root (protected) 
+GET http://127.0.0.1:3000
 Content-type: application/json; charset=utf8
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiIzOWNkZDcxMS1iMjQ0LTRkN2UtYmIyNy1jNThlZTkyMjMxNGMiLCJpYXQiOjE3MDM1MDY5NDcsImV4cCI6MTcwMzUxMDU0N30.Gu0ii7_9sbqTO9Uf69xfAGzLENzlhJMDfJunXNRGbpg
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiJkNDVlZWY1MC0yNWQzLTRlODQtOGE5MC00N2QwNDg2ODM5YTgiLCJpYXQiOjE3MDM1MTIxMzYsImV4cCI6MTcwMzUxNTczNn0.X-BAEiNVnzS-6FnxFSJaETRSeAfCUQ9ClTsWKwA9SRc
 
-### Logout 
-GET http://127.0.0.1:3000/logout HTTP/1.1
+### logout 
+GET http://127.0.0.1:3000/auth/logout HTTP/1.1
 Content-type: application/json; charset=utf8
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiIzOWNkZDcxMS1iMjQ0LTRkN2UtYmIyNy1jNThlZTkyMjMxNGMiLCJpYXQiOjE3MDM1MDY5NDcsImV4cCI6MTcwMzUxMDU0N30.Gu0ii7_9sbqTO9Uf69xfAGzLENzlhJMDfJunXNRGbpg
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiJkNDVlZWY1MC0yNWQzLTRlODQtOGE5MC00N2QwNDg2ODM5YTgiLCJpYXQiOjE3MDM1MTIxMzYsImV4cCI6MTcwMzUxNTczNn0.X-BAEiNVnzS-6FnxFSJaETRSeAfCUQ9ClTsWKwA9SRc
 
-### List users
+### list users
 GET http://127.0.0.1:3000/users
 
-### Get user
+### get user
 GET http://127.0.0.1:3000/users/617646a0-7437-48a0-bb03-a7aa830f8f81
 
-### Add a new user
+### add a new user
 POST http://127.0.0.1:3000/users
 Content-type: application/json; charset=utf8
 
@@ -38,7 +38,7 @@ Content-type: application/json; charset=utf8
     "password_salt": "pjZKk6A8YtC8$9p&UIp62bv4PLwD7@dF"
 }
 
-### Update user
+### update user
 PUT http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
 Content-type: application/json; charset=utf8
 
@@ -50,7 +50,7 @@ Content-type: application/json; charset=utf8
     "password_salt": "pjZKk6A8YtC8$9p&UIp62bv4PLwD7@dF"
 }
 
-### Delete user
+### delete user
 DELETE http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
 
 ###

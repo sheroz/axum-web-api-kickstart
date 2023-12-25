@@ -84,7 +84,10 @@ where
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|_| AuthError::InvalidToken)?;
+            .map_err(|_| {
+                tracing::error!("invalid authorization header");
+                AuthError::InvalidToken
+            })?;
 
         // decode the user data
         let token_data = jwt::decode::<JwtClaims>(
@@ -92,7 +95,10 @@ where
             &config::get().jwt_keys.decoding,
             &jwt::Validation::default(),
         )
-        .map_err(|_| AuthError::InvalidToken)?;
+        .map_err(|_| {
+            tracing::error!("invalid token: {:#?}", bearer.token());
+            AuthError::InvalidToken
+        })?;
 
         // check Redis for revoked tokens
         let shared_state: SharedState = Arc::from_ref(state);
@@ -103,7 +109,7 @@ where
         match redis_result {
             Ok(revoked) => {
                 if revoked {
-                    tracing::error!("access denied for revoked token: {:#?}", token_data.claims);
+                    tracing::error!("access denied (revoked token): {:#?}", token_data.claims);
                     Err(AuthError::WrongCredentials)
                 } else {
                     Ok(token_data.claims)
@@ -122,12 +128,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/login", post(login_handler))
         .route("/logout", get(logout_handler))
         .route("/refresh", post(refresh_handler))
-        .route("/sample_protected", get(sample_protected_handler))
-}
-
-async fn sample_protected_handler(claims: JwtClaims, State(_state): State<SharedState>) {
-    tracing::debug!("entered: protected_sample_handler()");
-    tracing::trace!("login details: {:#?}", claims);
 }
 
 async fn refresh_handler() {
@@ -141,24 +141,46 @@ async fn login_handler(
     tracing::debug!("entered: login_handler()");
     if let Some(user) = get_user_by_username(&login.username, &state).await {
         if user.password_hash == login.password_hash {
+            let config = config::get();
             let time_now = chrono::Utc::now();
-            let jwt_claims = JwtClaims {
+
+            let jwt_refresh_claims = JwtClaims {
                 sub: user.id.to_string(),
                 jti: Uuid::new_v4().to_string(),
                 iat: time_now.timestamp() as usize,
-                exp: (time_now + chrono::Duration::minutes(60)).timestamp() as usize,
+                exp: (time_now + chrono::Duration::seconds(config.jwt_expire_refresh_token_seconds))
+                    .timestamp() as usize,
             };
 
-            let access_token = jwt::encode(
+            let jwt_access_claims = JwtClaims {
+                sub: user.id.to_string(),
+                jti: Uuid::new_v4().to_string(),
+                iat: time_now.timestamp() as usize,
+                exp: (time_now + chrono::Duration::seconds(config.jwt_expire_access_token_seconds))
+                    .timestamp() as usize,
+            };
+
+            let refresh_token = jwt::encode(
                 &jwt::Header::default(),
-                &jwt_claims,
-                &jwt::EncodingKey::from_secret(config::get().jwt_secret.as_ref()),
+                &jwt_refresh_claims,
+                &jwt::EncodingKey::from_secret(config.jwt_secret.as_ref()),
             )
             .unwrap();
 
-            tracing::info!("access granted with claims: {:#?}", jwt_claims);
+            let access_token = jwt::encode(
+                &jwt::Header::default(),
+                &jwt_access_claims,
+                &jwt::EncodingKey::from_secret(config.jwt_secret.as_ref()),
+            )
+            .unwrap();
 
-            let json = json!({"access_token": access_token, "token_type": "Bearer"});
+            tracing::info!("access granted: {:#?}", jwt_access_claims);
+
+            let json = json!({
+                "refresh_token": refresh_token,
+                "access_token": access_token,
+                "token_type": "Bearer"
+            });
             tracing::trace!("granted token: {:#?}", json);
 
             return Json(json).into_response();

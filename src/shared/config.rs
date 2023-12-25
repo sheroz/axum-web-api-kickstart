@@ -25,6 +25,8 @@ pub struct Config {
     // JWT
     pub jwt_secret: String,
     pub jwt_keys: JwtKeys,
+    pub jwt_expire_access_token_seconds: i64, 
+    pub jwt_expire_refresh_token_seconds: i64, 
 }
 
 pub struct JwtKeys {
@@ -95,6 +97,8 @@ pub fn load_from_dotenv() {
         postgres_connection_pool: env_parse("POSTGRES_CONNECTION_POOL"),
         jwt_keys: JwtKeys::new(jwt_secret.as_bytes()),
         jwt_secret,
+        jwt_expire_access_token_seconds: env_parse("JWT_EXPIRE_ACCESS_TOKEN_SECONDS"),
+        jwt_expire_refresh_token_seconds: env_parse("JWT_EXPIRE_REFRESH_TOKEN_SECONDS"),
     };
 
     tracing::trace!("configuration: {:#?}", config);
