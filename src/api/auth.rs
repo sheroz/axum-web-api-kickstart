@@ -174,6 +174,7 @@ async fn logout_handler(claims: JwtClaims, State(state): State<SharedState>) -> 
     tracing::trace!("logout claims: {:#?}", claims);
 
     // add token into revoked list in Redis
+    // access tokens are tracked by JWT ID that handles the cases of reusing lost tokens and multi-device scenarios
     let mut redis = state.redis.lock().await;
     let redis_result: RedisResult<()> = redis.sadd(REDIS_JWT_REVOKED, claims.jti).await;
     if let Err(e) = redis_result {
