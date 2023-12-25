@@ -8,7 +8,7 @@ use axum::{
 use sqlx::types::Uuid;
 
 use crate::{
-    application::repository::user_repository::*, domain::model::user::User,
+    application::repository::user_repo, domain::model::user::User,
     shared::state::SharedState,
 };
 
@@ -25,7 +25,7 @@ async fn list_users_handler(
     State(state): State<SharedState>,
 ) -> Result<Json<Vec<User>>, impl IntoResponse> {
     tracing::debug!("entered: handler_list_users()");
-    match all_users(&state).await {
+    match user_repo::all_users(&state).await {
         Some(users) => Ok(Json(users)),
         None => Err(StatusCode::NOT_FOUND),
     }
@@ -36,7 +36,7 @@ async fn add_user_handler(
     Json(user): Json<User>,
 ) -> impl IntoResponse {
     tracing::debug!("entered: handler_add_user()");
-    match add_user(user, &state).await {
+    match user_repo::add_user(user, &state).await {
         Some(user) => (StatusCode::CREATED, Json(user)).into_response(),
         None => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
@@ -47,7 +47,7 @@ async fn get_user_handler(
     State(state): State<SharedState>,
 ) -> Result<Json<User>, impl IntoResponse> {
     tracing::debug!("entered: handler_get_user({})", id);
-    match get_user(id, &state).await {
+    match user_repo::get_user(id, &state).await {
         Some(user) => Ok(Json(user)),
         None => Err(StatusCode::NOT_FOUND),
     }
@@ -59,7 +59,7 @@ async fn update_user_handler(
     Json(user): Json<User>,
 ) -> Result<Json<User>, impl IntoResponse> {
     tracing::debug!("entered: update_user_handler({})", id);
-    match update_user(id, user, &state).await {
+    match user_repo::update_user(id, user, &state).await {
         Some(user) => Ok(Json(user)),
         None => Err(StatusCode::NOT_FOUND),
     }
@@ -70,7 +70,7 @@ async fn delete_user_handler(
     State(state): State<SharedState>,
 ) -> impl IntoResponse {
     tracing::debug!("entered: handler_delete_user({})", id);
-    match delete_user(id, &state).await {
+    match user_repo::delete_user(id, &state).await {
         Some(true) => StatusCode::OK,
         Some(false) => {
             tracing::warn!("User not found for deletion: {}", id);

@@ -4,6 +4,7 @@ use http_body_util::{BodyExt, Empty};
 use hyper::Request;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
+use uuid::Uuid;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -12,18 +13,20 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 async fn root_path_test() {
     // load configuration
     config::load_from_dotenv();
-    let config = config::CONFIG.get().unwrap();
+    let config = config::get();
 
-    let url = config.service_http_addr();
-    let expected = "<h1>Axum-Web</h1>";
+    let heartbeat_id = Uuid::new_v4().to_string();
+    let url = format!("{}/heartbeat/{}", config.service_http_addr(), heartbeat_id);
 
     // fetch using reqwest
     let body = fetch_url_reqwest(&url).await.unwrap();
-    assert_eq!(body, expected);
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["heartbeat-id"], heartbeat_id);
 
     // fetch using hyper
     let body = fetch_url_hyper(&url).await.unwrap();
-    assert_eq!(body, expected);
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["heartbeat-id"], heartbeat_id);
 }
 
 // fetch using `reqwest`
