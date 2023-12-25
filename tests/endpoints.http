@@ -10,10 +10,15 @@ Content-type: application/json; charset=utf8
     "password_hash": "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51"
 }
 
+### Test sample protected 
+GET http://127.0.0.1:3000/sample_protected HTTP/1.1
+Content-type: application/json; charset=utf8
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiIzOWNkZDcxMS1iMjQ0LTRkN2UtYmIyNy1jNThlZTkyMjMxNGMiLCJpYXQiOjE3MDM1MDY5NDcsImV4cCI6MTcwMzUxMDU0N30.Gu0ii7_9sbqTO9Uf69xfAGzLENzlhJMDfJunXNRGbpg
+
 ### Logout 
 GET http://127.0.0.1:3000/logout HTTP/1.1
 Content-type: application/json; charset=utf8
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJpYXQiOjE3MDMyOTU2NzAsImV4cCI6MTcwMzI5OTI3MH0.Waf7KKejirn6-WVzmbV1yLgf0nWHZyL-u7y2T7Qv7no
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2MTc2NDZhMC03NDM3LTQ4YTAtYmIwMy1hN2FhODMwZjhmODEiLCJqdGkiOiIzOWNkZDcxMS1iMjQ0LTRkN2UtYmIyNy1jNThlZTkyMjMxNGMiLCJpYXQiOjE3MDM1MDY5NDcsImV4cCI6MTcwMzUxMDU0N30.Gu0ii7_9sbqTO9Uf69xfAGzLENzlhJMDfJunXNRGbpg
 
 ### List users
 GET http://127.0.0.1:3000/users
