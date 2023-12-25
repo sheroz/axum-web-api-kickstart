@@ -11,10 +11,12 @@ use serde_json::json;
 use std::collections::HashMap;
 
 use super::{
-    auth::{self, JwtClaims},
+    auth,
     users,
 };
+
 use crate::shared::state::SharedState;
+use crate::application::security::jwt_claims::JwtClaims;
 
 pub fn routes(state: SharedState) -> Router {
     // build the service routes
