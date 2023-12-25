@@ -144,15 +144,7 @@ async fn login_handler(
             let config = config::get();
             let time_now = chrono::Utc::now();
 
-            let jwt_refresh_claims = JwtClaims {
-                sub: user.id.to_string(),
-                jti: Uuid::new_v4().to_string(),
-                iat: time_now.timestamp() as usize,
-                exp: (time_now + chrono::Duration::seconds(config.jwt_expire_refresh_token_seconds))
-                    .timestamp() as usize,
-            };
-
-            let jwt_access_claims = JwtClaims {
+            let access_claims = JwtClaims {
                 sub: user.id.to_string(),
                 jti: Uuid::new_v4().to_string(),
                 iat: time_now.timestamp() as usize,
@@ -160,28 +152,36 @@ async fn login_handler(
                     .timestamp() as usize,
             };
 
-            let refresh_token = jwt::encode(
-                &jwt::Header::default(),
-                &jwt_refresh_claims,
-                &jwt::EncodingKey::from_secret(config.jwt_secret.as_ref()),
-            )
-            .unwrap();
-
             let access_token = jwt::encode(
                 &jwt::Header::default(),
-                &jwt_access_claims,
+                &access_claims,
                 &jwt::EncodingKey::from_secret(config.jwt_secret.as_ref()),
             )
             .unwrap();
 
-            tracing::info!("access granted: {:#?}", jwt_access_claims);
+            let refresh_claims = JwtClaims {
+                sub: user.id.to_string(),
+                jti: Uuid::new_v4().to_string(),
+                iat: time_now.timestamp() as usize,
+                exp: (time_now + chrono::Duration::seconds(config.jwt_expire_refresh_token_seconds))
+                    .timestamp() as usize,
+            };
+
+            let refresh_token = jwt::encode(
+                &jwt::Header::default(),
+                &refresh_claims,
+                &jwt::EncodingKey::from_secret(config.jwt_secret.as_ref()),
+            )
+            .unwrap();
+
+            tracing::info!("claims granted\naccess: {:#?}\nrefresh: {:#?}", access_claims, refresh_claims);
 
             let json = json!({
-                "refresh_token": refresh_token,
                 "access_token": access_token,
+                "refresh_token": refresh_token,
                 "token_type": "Bearer"
             });
-            tracing::trace!("granted token: {:#?}", json);
+            tracing::trace!("access granted: {:#?}", json);
 
             return Json(json).into_response();
         }
