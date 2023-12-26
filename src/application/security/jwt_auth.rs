@@ -1,44 +1,80 @@
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-use serde_json::json;
-use uuid::Uuid;
-
 use crate::{
     application::{app_const::*, redis_service},
     shared::{config, state::SharedState},
 };
+use uuid::Uuid;
 
 use super::{auth_error::*, jwt_claims::*};
 
-pub async fn logout(claims: &JwtClaims, state: &SharedState) -> bool {
-    if let Some(access_token_id) = parse_token_id(claims, JWT_JTI_PEFIX_ACCESS_TOKEN) {
-        return redis_service::add_revoked(vec![access_token_id], state).await;
-    }
-    false
+pub struct JwtTokens {
+    pub access_token: String,
+    pub refresh_token: String,
 }
 
-pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<Response, AuthError> {
+pub async fn logout(
+    access_claims: &JwtClaims,
+    refresh_token: &str,
+    state: &SharedState,
+) -> Result<(), AuthError> {
+    let access_token_id = parse_token_id(access_claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
+    let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
+    let refresh_token_id = parse_token_id(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN)?;
+    let revoke_ids = vec![access_token_id, refresh_token_id];
+    if redis_service::add_revoked(revoke_ids, state).await {
+        return Ok(());
+    }
+    Err(AuthError::InternalServerError)
+}
+
+fn decode_token(
+    token: &str,
+    validation: &jsonwebtoken::Validation,
+) -> Result<JwtClaims, AuthError> {
+    let jwt_keys = &config::get().jwt_keys;
+    let token_data = jsonwebtoken::decode::<JwtClaims>(token, &jwt_keys.decoding, validation)
+        .map_err(|_| {
+            tracing::error!("invalid token: {:#?}", token);
+            AuthError::InvalidToken
+        })?;
+
+    Ok(token_data.claims)
+}
+
+pub fn parse_token_id<'a>(
+    claims: &'a JwtClaims,
+    expected_type: &str,
+) -> Result<&'a str, AuthError> {
+    let jti_field_len = claims.jti.len();
+    // check the JWT ID size
+    if jti_field_len == JWT_JTI_FIELD_SIZE {
+        // check the JWT ID type
+        if claims.jti.starts_with(expected_type) {
+            return Ok(claims.jti.get(2..).unwrap());
+        } else {
+            tracing::error!(
+                "Could not parse token id. Invalid JWT ID type: found {}, expected {}",
+                claims.jti,
+                expected_type
+            );
+        }
+    } else {
+        tracing::error!(
+            "Could not parse token id. Invalid JWT ID size: found {}, expected {}",
+            jti_field_len,
+            JWT_JTI_FIELD_SIZE
+        );
+    }
+    Err(AuthError::InvalidToken)
+}
+
+pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<JwtTokens, AuthError> {
     let jwt_keys = &config::get().jwt_keys;
 
     // decode the refresh token
-    let refresh_token_data = jsonwebtoken::decode::<JwtClaims>(
-        refresh_token,
-        &jwt_keys.decoding,
-        &jsonwebtoken::Validation::default(),
-    )
-    .map_err(|_| {
-        tracing::error!("invalid token: {:#?}", refresh_token);
-        AuthError::InvalidToken
-    })?;
+    let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
 
     // validate the token type
-    let refresh_token_id =
-        match parse_token_id(&refresh_token_data.claims, JWT_JTI_PEFIX_REFRESH_TOKEN) {
-            Some(id) => id,
-            None => return Err(AuthError::InvalidToken),
-        };
+    let refresh_token_id = parse_token_id(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN)?;
 
     let mut revoked_list = vec![refresh_token_id];
 
@@ -46,10 +82,7 @@ pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<Respons
     match redis_service::exists_in_revoked(refresh_token_id, state).await {
         Some(revoked) => {
             if revoked {
-                tracing::error!(
-                    "access denied (revoked token): {:#?}",
-                    refresh_token_data.claims
-                );
+                tracing::error!("access denied (revoked token): {:#?}", refresh_claims);
                 return Err(AuthError::WrongCredentials);
             }
         }
@@ -59,23 +92,13 @@ pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<Respons
     }
 
     // decode the access token
-    let access_token = &refresh_token_data.claims.sub;
+    let access_token = &refresh_claims.sub;
     let mut validation = jsonwebtoken::Validation::default();
     validation.validate_exp = false;
-    let access_token_data =
-        jsonwebtoken::decode::<JwtClaims>(access_token, &jwt_keys.decoding, &validation).map_err(
-            |_| {
-                tracing::error!("invalid token: {:#?}", access_token);
-                AuthError::InvalidToken
-            },
-        )?;
+    let access_token_claims = decode_token(access_token, &validation)?;
 
     // validate the token type
-    let access_token_id =
-        match parse_token_id(&access_token_data.claims, JWT_JTI_PEFIX_ACCESS_TOKEN) {
-            Some(id) => id,
-            None => return Err(AuthError::InvalidToken),
-        };
+    let access_token_id = parse_token_id(&access_token_claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
 
     // validate the expiry time of access token
     validation.validate_exp = true;
@@ -89,36 +112,12 @@ pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<Respons
     }
 
     // using refresh token rotation technique
-    let user_id = access_token_data.claims.sub;
-    build_response(user_id)
+    let user_id = access_token_claims.sub;
+    let tokens = generate_tokens(user_id);
+    Ok(tokens)
 }
 
-pub fn parse_token_id<'a>(claims: &'a JwtClaims, expected_type: &str) -> Option<&'a str> {
-    // validate the token type
-    let jti_field_len = claims.jti.len();
-    if  jti_field_len == JWT_JTI_FIELD_SIZE {
-        if claims.jti.starts_with(expected_type) {
-            Some(claims.jti.get(2..).unwrap())
-        } else {
-            tracing::error!(
-                "Could not parse token id. Invalid JWT ID type: found {}, expected {}",
-                claims.jti,
-                expected_type
-            );
-            None
-        }
-    }
-    else {
-        tracing::error!(
-            "Could not parse token id. Invalid JWT ID size: found {}, expected {}",
-            jti_field_len,
-            JWT_JTI_FIELD_SIZE
-        );
-        None
-    }    
-}
-
-pub fn build_response(user_id: String) -> Result<Response, AuthError> {
+pub fn generate_tokens(user_id: String) -> JwtTokens {
     let config = config::get();
     let time_now = chrono::Utc::now();
 
@@ -158,12 +157,14 @@ pub fn build_response(user_id: String) -> Result<Response, AuthError> {
         refresh_claims
     );
 
-    let json = json!({
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "Bearer"
-    });
+    tracing::info!(
+        "JWT: generated tokens\naccess {:#?}\nrefresh {:#?}",
+        access_token,
+        refresh_token
+    );
 
-    tracing::trace!("JWT: generated tokens {:#?}", json);
-    Ok(Json(json).into_response())
+    JwtTokens {
+        access_token,
+        refresh_token,
+    }
 }

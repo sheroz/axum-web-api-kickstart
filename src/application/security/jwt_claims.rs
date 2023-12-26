@@ -63,11 +63,7 @@ where
 
         // check for revoked tokens
         let shared_state: SharedState = Arc::from_ref(state);
-        let access_token_id =
-            match jwt_auth::parse_token_id(&token_data.claims, JWT_JTI_PEFIX_ACCESS_TOKEN) {
-                Some(id) => id,
-                None => return Err(AuthError::InvalidToken),
-            };
+        let access_token_id = jwt_auth::parse_token_id(&token_data.claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
 
         match redis_service::exists_in_revoked(access_token_id, &shared_state).await {
             Some(revoked) => {

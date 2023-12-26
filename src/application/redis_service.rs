@@ -19,9 +19,10 @@ pub async fn exists_in_revoked(token_id: &str, state: &SharedState) -> Option<bo
 }
 
 pub async fn add_revoked(revoked_ids: Vec<&str>, state: &SharedState) -> bool {
-    // add token into revoked list in Redis
+    // add tokens into revoked list in Redis
     // tokens are tracked by JWT ID that handles the cases of reusing lost tokens and multi-device scenarios
     let mut redis = state.redis.lock().await;
+
     for token_id in revoked_ids {
         let redis_result: RedisResult<()> = redis.sadd(JWT_REDIS_REVOKED_LIST_KEY, token_id).await;
         if let Err(e) = redis_result {
