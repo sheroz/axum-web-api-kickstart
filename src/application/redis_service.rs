@@ -19,9 +19,12 @@ pub async fn exists_in_revoked(token_id: &str, state: &SharedState) -> Option<bo
 }
 
 pub async fn add_revoked(revoked_ids: Vec<&str>, state: &SharedState) -> bool {
-    // add token into revoked list in Redis
+    // add tokens into revoked list in Redis
     // tokens are tracked by JWT ID that handles the cases of reusing lost tokens and multi-device scenarios
+    tracing::trace!("adding jwt tokens into revoked list: {:#?}", revoked_ids);
+
     let mut redis = state.redis.lock().await;
+
     for token_id in revoked_ids {
         let redis_result: RedisResult<()> = redis.sadd(JWT_REDIS_REVOKED_LIST_KEY, token_id).await;
         if let Err(e) = redis_result {
@@ -40,7 +43,7 @@ pub async fn log_revoked_tokens(redis: &mut Connection) {
     let redis_result: RedisResult<Vec<String>> = redis.smembers(JWT_REDIS_REVOKED_LIST_KEY).await;
     match redis_result {
         Ok(revoked_tokens) => {
-            tracing::trace!("redis -> revoked jwt tokens: {:#?}", revoked_tokens);
+            tracing::trace!("redis -> list of revoked jwt tokens: {:#?}", revoked_tokens);
         }
         Err(e) => {
             tracing::error!("{}", e);
