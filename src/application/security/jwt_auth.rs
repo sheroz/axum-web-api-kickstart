@@ -11,15 +11,24 @@ pub struct JwtTokens {
     pub refresh_token: String,
 }
 
-pub async fn logout(
-    access_claims: &JwtClaims,
+pub async fn revoke_refresh_token(
     refresh_token: &str,
     state: &SharedState,
 ) -> Result<(), AuthError> {
-    let access_token_id = parse_token_id(access_claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
     let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
     let refresh_token_id = parse_token_id(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN)?;
-    let revoke_ids = vec![access_token_id, refresh_token_id];
+    let mut revoke_ids = vec![refresh_token_id];
+
+    let access_token_id;
+    if let Ok(access_claims) =
+        decode_token(&refresh_claims.sub, &jsonwebtoken::Validation::default())
+    {
+        if let Ok(token_id) = parse_token_id(&access_claims, JWT_JTI_PEFIX_ACCESS_TOKEN) {
+            access_token_id = token_id.to_string();
+            revoke_ids.push(&access_token_id);
+        }
+    }
+
     if redis_service::add_revoked(revoke_ids, state).await {
         return Ok(());
     }

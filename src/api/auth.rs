@@ -13,7 +13,6 @@ use crate::{
         security::{
             auth_error::AuthError,
             jwt_auth::{self, JwtTokens},
-            jwt_claims::JwtClaims,
         },
     },
     shared::state::SharedState,
@@ -61,13 +60,12 @@ async fn login_handler(
 }
 
 async fn logout_handler(
-    access_claims: JwtClaims,
     State(state): State<SharedState>,
     refresh_token: String,
 ) -> impl IntoResponse {
     tracing::debug!("entered: logout_handler()");
-    tracing::trace!("logout claims: {:#?}, refresh_token: {}", access_claims, refresh_token);
-    jwt_auth::logout(&access_claims, &refresh_token, &state).await
+    tracing::trace!("refresh_token: {}", refresh_token);
+    jwt_auth::revoke_refresh_token(&refresh_token, &state).await
 }
 
 fn tokens_to_response(jwt_tokens: JwtTokens) -> Response {
