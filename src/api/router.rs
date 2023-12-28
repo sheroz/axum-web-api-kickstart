@@ -10,13 +10,10 @@ use axum::{
 use serde_json::json;
 use std::collections::HashMap;
 
-use super::{
-    auth,
-    users,
-};
+use super::{auth, users};
 
-use crate::shared::state::SharedState;
 use crate::application::security::jwt_claims::JwtClaims;
+use crate::shared::state::SharedState;
 
 pub fn routes(state: SharedState) -> Router {
     // build the service routes
@@ -51,9 +48,9 @@ async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     Json(map)
 }
 
-async fn root_handler(claims: JwtClaims) -> impl IntoResponse {
+async fn root_handler(access_claims: JwtClaims) -> impl IntoResponse {
     tracing::debug!("entered: root_handler()");
-    tracing::trace!("login details: {:#?}", claims);
+    tracing::trace!("authentication details: {:#?}", access_claims);
     Json(json!({"message": "Hello from Axum-Web!"}))
 }
 

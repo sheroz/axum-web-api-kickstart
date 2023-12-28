@@ -12,11 +12,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::{
-    application::{app_const::*, redis_service, security::auth_error::*},
+    application::{redis_service, security::auth_error::*},
     shared::{config, state::SharedState},
 };
-
-use super::jwt_auth;
 
 /// [JWT Claims]
 /// [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4)
@@ -46,8 +44,8 @@ where
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(|_| {
-                tracing::error!("invalid authorization header");
-                AuthError::InvalidToken
+                tracing::error!("Invalid authorization header");
+                AuthError::WrongCredentials
             })?;
 
         // decode the user data
@@ -57,18 +55,17 @@ where
             &jsonwebtoken::Validation::default(),
         )
         .map_err(|_| {
-            tracing::error!("invalid token: {:#?}", bearer.token());
-            AuthError::InvalidToken
+            tracing::error!("Invalid token: {:#?}", bearer.token());
+            AuthError::WrongCredentials
         })?;
 
         // check for revoked tokens
         let shared_state: SharedState = Arc::from_ref(state);
-        let access_token_id = jwt_auth::parse_token_id(&token_data.claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
 
-        match redis_service::exists_in_revoked(access_token_id, &shared_state).await {
+        match redis_service::exists_in_revoked(&token_data.claims, &shared_state).await {
             Some(revoked) => {
                 if revoked {
-                    tracing::error!("access denied (revoked token): {:#?}", token_data.claims);
+                    tracing::error!("Access denied (revoked token): {:#?}", token_data.claims);
                     Err(AuthError::WrongCredentials)
                 } else {
                     Ok(token_data.claims)
