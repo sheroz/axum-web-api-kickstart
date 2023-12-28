@@ -12,7 +12,7 @@ use crate::{
         repository::user_repo,
         security::{
             auth_error::AuthError,
-            jwt_auth::{self, JwtTokens},
+            jwt_auth::{self, JwtTokens}, jwt_claims::JwtClaims,
         },
     },
     shared::state::SharedState,
@@ -29,6 +29,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/login", post(login_handler))
         .route("/logout", post(logout_handler))
         .route("/refresh", post(refresh_handler))
+        .route("/clean-up", post(cleanup_handler))
 }
 
 async fn refresh_handler(
@@ -65,7 +66,16 @@ async fn logout_handler(
 ) -> impl IntoResponse {
     tracing::debug!("entered: logout_handler()");
     tracing::trace!("refresh_token: {}", refresh_token);
-    jwt_auth::revoke_refresh_token(&refresh_token, &state).await
+    jwt_auth::logout(&refresh_token, &state).await
+}
+
+async fn cleanup_handler(
+    State(state): State<SharedState>,
+    access_claims: JwtClaims
+) -> impl IntoResponse {
+    tracing::debug!("entered: cleanup_handler()");
+    tracing::trace!("authentication details: {:#?}", access_claims);
+    jwt_auth::cleanup_revoked_and_expired(&access_claims, &state).await
 }
 
 fn tokens_to_response(jwt_tokens: JwtTokens) -> Response {

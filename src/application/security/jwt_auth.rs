@@ -11,119 +11,67 @@ pub struct JwtTokens {
     pub refresh_token: String,
 }
 
-pub async fn revoke_refresh_token(
-    refresh_token: &str,
-    state: &SharedState,
-) -> Result<(), AuthError> {
+pub async fn logout(refresh_token: &str, state: &SharedState) -> Result<(), AuthError> {
     let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
-    let refresh_token_id = parse_token_id(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN)?;
-    let mut revoke_ids = vec![refresh_token_id];
-
-    let access_token_id;
-    if let Ok(access_claims) =
-        decode_token(&refresh_claims.sub, &jsonwebtoken::Validation::default())
-    {
-        if let Ok(token_id) = parse_token_id(&access_claims, JWT_JTI_PEFIX_ACCESS_TOKEN) {
-            access_token_id = token_id.to_string();
-            revoke_ids.push(&access_token_id);
-        }
-    }
-
-    if redis_service::add_revoked(revoke_ids, state).await {
-        return Ok(());
-    }
-    Err(AuthError::InternalServerError)
-}
-
-fn decode_token(
-    token: &str,
-    validation: &jsonwebtoken::Validation,
-) -> Result<JwtClaims, AuthError> {
-    let jwt_keys = &config::get().jwt_keys;
-    let token_data = jsonwebtoken::decode::<JwtClaims>(token, &jwt_keys.decoding, validation)
-        .map_err(|_| {
-            tracing::error!("invalid token: {:#?}", token);
-            AuthError::InvalidToken
-        })?;
-
-    Ok(token_data.claims)
-}
-
-pub fn parse_token_id<'a>(
-    claims: &'a JwtClaims,
-    expected_type: &str,
-) -> Result<&'a str, AuthError> {
-    let jti_field_len = claims.jti.len();
-    // check the JWT ID size
-    if jti_field_len == JWT_JTI_FIELD_SIZE {
-        // check the JWT ID type
-        if claims.jti.starts_with(expected_type) {
-            return Ok(claims.jti.get(2..).unwrap());
-        } else {
-            tracing::error!(
-                "Could not parse token id. Invalid JWT ID type: found {}, expected {}",
-                claims.jti,
-                expected_type
-            );
-        }
-    } else {
-        tracing::error!(
-            "Could not parse token id. Invalid JWT ID size: found {}, expected {}",
-            jti_field_len,
-            JWT_JTI_FIELD_SIZE
-        );
-    }
-    Err(AuthError::InvalidToken)
+    revoke_refresh_token(&refresh_claims, state).await
 }
 
 pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<JwtTokens, AuthError> {
-    let jwt_keys = &config::get().jwt_keys;
-
     // decode the refresh token
     let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
-
-    // validate the token type
-    let refresh_token_id = parse_token_id(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN)?;
-
-    let mut revoked_list = vec![refresh_token_id];
-
-    // check the refresh token in revoked list
-    match redis_service::exists_in_revoked(refresh_token_id, state).await {
-        Some(revoked) => {
-            if revoked {
-                tracing::error!("access denied (revoked token): {:#?}", refresh_claims);
-                return Err(AuthError::WrongCredentials);
-            }
-        }
-        None => {
-            return Err(AuthError::InternalServerError);
-        }
-    }
+    revoke_refresh_token(&refresh_claims, state).await?;
 
     // decode the access token
     let access_token = &refresh_claims.sub;
     let mut validation = jsonwebtoken::Validation::default();
     validation.validate_exp = false;
-    let access_token_claims = decode_token(access_token, &validation)?;
-
-    // validate the token type
-    let access_token_id = parse_token_id(&access_token_claims, JWT_JTI_PEFIX_ACCESS_TOKEN)?;
-
-    // validate the expiry time of access token
-    validation.validate_exp = true;
-    if jsonwebtoken::decode::<JwtClaims>(access_token, &jwt_keys.decoding, &validation).is_ok() {
-        // access token not expired yet, needs revoked
-        revoked_list.push(access_token_id);
-    }
-
-    if !redis_service::add_revoked(revoked_list, state).await {
-        return Err(AuthError::InternalServerError);
-    }
+    let access_claims = decode_token(access_token, &validation)?;
 
     // using refresh token rotation technique
-    let user_id = access_token_claims.sub;
+    let user_id = access_claims.sub;
     let tokens = generate_tokens(user_id);
     Ok(tokens)
+}
+
+pub async fn cleanup_revoked_and_expired(
+    _access_claims: &JwtClaims,
+    state: &SharedState,
+) -> Result<(), AuthError> {
+    // todo: implement role based validation: is_role(admin)
+    if !redis_service::cleanup_expired(state).await {
+        return Err(AuthError::InternalServerError);
+    }
+    Ok(())
+}
+
+async fn revoke_refresh_token(
+    refresh_claims: &JwtClaims,
+    state: &SharedState,
+) -> Result<(), AuthError> {
+    if !refresh_claims.jti.starts_with(JWT_JTI_PEFIX_REFRESH_TOKEN) {
+        tracing::error!(
+            "Invalid token type. Expected {}, Found {}",
+            JWT_JTI_PEFIX_REFRESH_TOKEN,
+            &refresh_claims.jti[..2]
+        );
+        return Err(AuthError::InvalidToken);
+    }
+
+    // check the refresh token in revoked list
+    validate_revoked(refresh_claims, state).await?;
+
+    let mut claims_to_revoke = vec![refresh_claims];
+
+    let access_claims;
+    if let Ok(claims) = decode_token(&refresh_claims.sub, &jsonwebtoken::Validation::default()) {
+        access_claims = claims;
+        claims_to_revoke.push(&access_claims);
+    }
+
+    if redis_service::revoke_tokens(claims_to_revoke, state).await {
+        return Ok(());
+    }
+    Err(AuthError::InternalServerError)
 }
 
 pub fn generate_tokens(user_id: String) -> JwtTokens {
@@ -132,7 +80,7 @@ pub fn generate_tokens(user_id: String) -> JwtTokens {
 
     let access_claims = JwtClaims {
         sub: user_id,
-        jti: format!("{}{}", JWT_JTI_PEFIX_ACCESS_TOKEN, Uuid::new_v4()),
+        jti: format!("{}:{}", JWT_JTI_PEFIX_ACCESS_TOKEN, Uuid::new_v4()),
         iat: time_now.timestamp() as usize,
         exp: (time_now + chrono::Duration::seconds(config.jwt_expire_access_token_seconds))
             .timestamp() as usize,
@@ -147,7 +95,7 @@ pub fn generate_tokens(user_id: String) -> JwtTokens {
 
     let refresh_claims = JwtClaims {
         sub: access_token.clone(),
-        jti: format!("{}{}", JWT_JTI_PEFIX_REFRESH_TOKEN, Uuid::new_v4()),
+        jti: format!("{}:{}", JWT_JTI_PEFIX_REFRESH_TOKEN, Uuid::new_v4()),
         iat: time_now.timestamp() as usize,
         exp: (time_now + chrono::Duration::seconds(config.jwt_expire_refresh_token_seconds))
             .timestamp() as usize,
@@ -176,4 +124,33 @@ pub fn generate_tokens(user_id: String) -> JwtTokens {
         access_token,
         refresh_token,
     }
+}
+
+fn decode_token(
+    token: &str,
+    validation: &jsonwebtoken::Validation,
+) -> Result<JwtClaims, AuthError> {
+    let jwt_keys = &config::get().jwt_keys;
+    let token_data = jsonwebtoken::decode::<JwtClaims>(token, &jwt_keys.decoding, validation)
+        .map_err(|_| {
+            tracing::error!("Invalid token: {:#?}", token);
+            AuthError::InvalidToken
+        })?;
+
+    Ok(token_data.claims)
+}
+
+async fn validate_revoked(claims: &JwtClaims, state: &SharedState) -> Result<(), AuthError> {
+    match redis_service::exists_in_revoked(claims, state).await {
+        Some(revoked) => {
+            if revoked {
+                tracing::error!("Access denied (revoked token): {:#?}", claims);
+                return Err(AuthError::WrongCredentials);
+            }
+        }
+        None => {
+            return Err(AuthError::InternalServerError);
+        }
+    }
+    Ok(())
 }
