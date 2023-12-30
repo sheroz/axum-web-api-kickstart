@@ -12,14 +12,23 @@ pub struct JwtTokens {
 }
 
 pub async fn logout(refresh_token: &str, state: &SharedState) -> Result<(), AuthError> {
-    let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
-    revoke_refresh_token(&refresh_claims, state).await
+    // checking the configuration if the usage of the list of revoked tokens is enabled
+    if config::get().jwt_use_revoked_list {
+        let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
+        revoke_refresh_token(&refresh_claims, state).await
+    } else {
+        Err(AuthError::NotAcceptable)
+    }
 }
 
 pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<JwtTokens, AuthError> {
     // decode the refresh token
     let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
-    revoke_refresh_token(&refresh_claims, state).await?;
+
+    // checking the configuration if the usage of the list of revoked tokens is enabled
+    if config::get().jwt_use_revoked_list {
+        revoke_refresh_token(&refresh_claims, state).await?;
+    }
 
     // decode the access token
     let access_token = &refresh_claims.sub;
@@ -37,7 +46,11 @@ pub async fn cleanup_revoked_and_expired(
     _access_claims: &JwtClaims,
     state: &SharedState,
 ) -> Result<(), AuthError> {
-    // todo: implement role based validation: is_role(admin)
+    // checking the configuration if the usage of the list of revoked tokens is enabled
+    if !config::get().jwt_use_revoked_list {
+        return Err(AuthError::NotAcceptable);
+    }
+
     if !redis_service::cleanup_expired(state).await {
         return Err(AuthError::InternalServerError);
     }

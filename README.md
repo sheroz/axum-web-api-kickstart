@@ -23,7 +23,8 @@ The project covers:
   - refresh tokens
   - configuration based tokens expiry
   - refresh token rotation technique
-  - list of revoked tokens based on `Redis`
+  - configuration based usage of revoked tokens list based on `Redis`
+  - cleanup of revoked list
 - `.env` based configuration parsing
 - `tracing` based logs
 - `docker-compose` configuration

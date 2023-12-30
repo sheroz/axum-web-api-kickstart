@@ -27,8 +27,8 @@ pub struct Config {
     pub jwt_keys: JwtKeys,
     pub jwt_expire_access_token_seconds: i64, 
     pub jwt_expire_refresh_token_seconds: i64, 
+    pub jwt_use_revoked_list: bool
 }
-
 pub struct JwtKeys {
     pub encoding: EncodingKey,
     pub decoding: DecodingKey,
@@ -99,6 +99,7 @@ pub fn load_from_dotenv() {
         jwt_secret,
         jwt_expire_access_token_seconds: env_parse("JWT_EXPIRE_ACCESS_TOKEN_SECONDS"),
         jwt_expire_refresh_token_seconds: env_parse("JWT_EXPIRE_REFRESH_TOKEN_SECONDS"),
+        jwt_use_revoked_list: env_parse("JWT_USE_REVOKED_LIST")
     };
 
     tracing::trace!("configuration: {:#?}", config);

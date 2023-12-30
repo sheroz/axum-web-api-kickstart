@@ -10,7 +10,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 #[tokio::test]
 #[ignore]
-async fn root_path_test() {
+async fn heartbeat_test() {
     // load configuration
     config::load_from_dotenv();
     let config = config::get();
@@ -19,7 +19,8 @@ async fn root_path_test() {
     let url = format!("{}/heartbeat/{}", config.service_http_addr(), heartbeat_id);
 
     // fetch using reqwest
-    let body = fetch_url_reqwest(&url).await.unwrap();
+    let response = reqwest::get(&url).await.unwrap();
+    let body = response.text().await.unwrap();
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
     assert_eq!(json["heartbeat-id"], heartbeat_id);
 
@@ -27,13 +28,6 @@ async fn root_path_test() {
     let body = fetch_url_hyper(&url).await.unwrap();
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
     assert_eq!(json["heartbeat-id"], heartbeat_id);
-}
-
-// fetch using `reqwest`
-async fn fetch_url_reqwest(url: &str) -> Result<String> {
-    let res = reqwest::get(url).await?;
-    let body = res.text().await?;
-    Ok(body)
 }
 
 // fetch using `hyper`

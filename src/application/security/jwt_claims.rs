@@ -18,6 +18,10 @@ use crate::{
 
 /// [JWT Claims]
 /// [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4)
+/// ToDo: implement role based validation: is_role(admin)
+/// roles, groups: https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2
+/// https://www.rfc-editor.org/rfc/rfc9068.html#name-authorization-claims
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtClaims {
     /// Subject
