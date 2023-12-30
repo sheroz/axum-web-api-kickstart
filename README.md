@@ -1,6 +1,6 @@
 # Getting started with Web Services in Rust
 
-(using `axum`, `sqlx`, `postgres`, and `redis`)
+(using `axum`, `jwt`, `sqlx`, `postgres`, and `redis`)
 
 [![build & test](https://github.com/sheroz/axum-web/actions/workflows/ci.yml/badge.svg)](https://github.com/sheroz/axum-web/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/github/license/sheroz/axum-web)](https://github.com/sheroz/axum-web/tree/main/LICENSE)
@@ -12,19 +12,19 @@ The project covers:
   - CORS settings
   - error handling
   - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
+- `JWT` based authentication
+  - access tokens
+  - refresh tokens
+  - configuration based tokens expiry
+  - refresh tokens rotation technique
+  - configuration based usage of revoked tokens list based on `Redis`
+  - cleanup of revoked list
 - Using `PostgreSQL`database with `sqlx` driver
   - migrations
   - async connection pooling
   - async CRUD operations
 - Using `Redis` in-memory storage
   - async operations
-- `JWT` based authentication
-  - access tokens
-  - refresh tokens
-  - configuration based tokens expiry
-  - refresh token rotation technique
-  - configuration based usage of revoked tokens list based on `Redis`
-  - cleanup of revoked list
 - `.env` based configuration parsing
 - `tracing` based logs
 - `docker-compose` configuration
