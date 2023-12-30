@@ -11,7 +11,7 @@ The project covers:
   - routing
   - CORS settings
   - error handling
-  - graceful shutdown (!!! does not work after upgrading to axum 0.7 and hyper 1.0 !!!)
+  - graceful shutdown
 - `JWT` based authentication
   - access tokens
   - refresh tokens
