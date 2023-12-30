@@ -12,8 +12,7 @@ use std::collections::HashMap;
 
 use super::{auth, users};
 
-use crate::application::security::jwt_claims::JwtClaims;
-use crate::shared::state::SharedState;
+use crate::application::{security::jwt_claims::JwtClaims, shared::state::SharedState, app_const::API_VERSION};
 
 pub fn routes(state: SharedState) -> Router {
     // build the service routes
@@ -43,19 +42,18 @@ pub async fn logging_middleware(request: Request<Body>, next: Next) -> Response 
 async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     let map = HashMap::from([
         ("service".to_string(), "axum-web".to_string()),
+        ("version".to_string(), API_VERSION.to_string()),
         ("heartbeat-id".to_string(), id),
     ]);
     Json(map)
 }
 
 async fn root_handler(access_claims: JwtClaims) -> impl IntoResponse {
-    tracing::debug!("entered: root_handler()");
     tracing::trace!("authentication details: {:#?}", access_claims);
     Json(json!({"message": "Hello from Axum-Web!"}))
 }
 
 async fn head_request_handler(method: Method) -> Response {
-    tracing::debug!("entered head_request_handler()");
     // it usually only makes sense to special-case HEAD
     // if computing the body has some relevant cost
     if method == Method::HEAD {
@@ -73,7 +71,6 @@ async fn any_request_handler(
     request: Request,
 ) -> impl IntoResponse {
     if tracing::enabled!(tracing::Level::DEBUG) {
-        tracing::debug!("entered: any_request_handler()");
         tracing::debug!("method: {:?}", method);
         tracing::debug!("headers: {:?}", headers);
         tracing::debug!("params: {:?}", params);
@@ -84,7 +81,6 @@ async fn any_request_handler(
 }
 
 async fn error_404_handler(request: Request) -> impl IntoResponse {
-    tracing::debug!("entered: error_404_handler()");
     tracing::error!("route not found: {:?}", request);
     StatusCode::NOT_FOUND
 }

@@ -12,13 +12,15 @@ The project covers:
   - CORS settings
   - error handling
   - graceful shutdown
-- `JWT` based authentication
+- `JWT` based authentication & authorization
   - access tokens
   - refresh tokens
   - configuration based tokens expiry
   - refresh tokens rotation technique
-  - configuration based usage of revoked tokens list based on `Redis`
-  - cleanup of revoked list
+  - configuration based revoked tokens using `Redis`
+    - revoke all tokens issued until the current time
+    - revoke tokens belonging to a user issued until the current time
+    - cleanup of revoked tokens
 - Using `PostgreSQL`database with `sqlx` driver
   - migrations
   - async connection pooling
@@ -38,7 +40,7 @@ docker-compose up -d
 cargo run
 ```
 
-REST API test samples: [/tests/endpoints.http](/tests/endpoints.http)
+REST API usage samples: [/tests/endpoints.http](/tests/endpoints.http)
 
 ## Logging
 

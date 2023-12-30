@@ -1,4 +1,4 @@
-use axum_web::shared::config;
+use axum_web::application::shared::config;
 use reqwest::StatusCode;
 type GenericResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
