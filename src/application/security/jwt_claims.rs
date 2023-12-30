@@ -11,8 +11,9 @@ use axum_extra::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::{
-    application::{redis_service, security::auth_error::*},
+use crate::application::{
+    redis_service,
+    security::auth_error::*,
     shared::{config, state::SharedState},
 };
 

@@ -1,5 +1,6 @@
-use crate::{
-    application::{app_const::*, redis_service},
+use crate::application::{
+    app_const::*,
+    redis_service,
     shared::{config, state::SharedState},
 };
 use uuid::Uuid;

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::{app_const::*, security::jwt_claims::JwtClaims};
-use crate::shared::state::SharedState;
+use crate::application::shared::state::SharedState;
 use redis::{aio::Connection, AsyncCommands, RedisResult};
 
 pub async fn exists_in_revoked(claims: &JwtClaims, state: &SharedState) -> Option<bool> {
@@ -21,7 +21,7 @@ pub async fn exists_in_revoked(claims: &JwtClaims, state: &SharedState) -> Optio
 pub async fn revoke_tokens(list_to_revoke: Vec<&JwtClaims>, state: &SharedState) -> bool {
     // add tokens into revoked list in Redis
     // tokens are tracked by JWT ID that handles the cases of reusing lost tokens and multi-device scenarios
-    tracing::trace!("adding jwt tokens into revoked list: {:#?}", list_to_revoke);
+    tracing::debug!("adding jwt tokens into revoked list: {:#?}", list_to_revoke);
 
     let mut redis = state.redis.lock().await;
 
@@ -36,7 +36,7 @@ pub async fn revoke_tokens(list_to_revoke: Vec<&JwtClaims>, state: &SharedState)
     }
 
     if tracing::enabled!(tracing::Level::TRACE) {
-        log_revoked_tokens(&mut redis).await;
+        log_revoked_tokens_count(&mut redis).await;
     }
     true
 }
@@ -44,7 +44,10 @@ pub async fn revoke_tokens(list_to_revoke: Vec<&JwtClaims>, state: &SharedState)
 pub async fn cleanup_expired(state: &SharedState) -> bool {
     match delete_expired_tokens(state).await {
         Ok(deleted) => {
-            tracing::debug!("count of expired tokens deleted from the revoked list: {}", deleted);
+            tracing::debug!(
+                "count of expired tokens deleted from the revoked list: {}",
+                deleted
+            );
             true
         }
         Err(e) => {
@@ -76,9 +79,25 @@ async fn delete_expired_tokens(state: &SharedState) -> RedisResult<usize> {
     }
 
     if tracing::enabled!(tracing::Level::TRACE) {
-        log_revoked_tokens(&mut redis).await;
+        log_revoked_tokens_count(&mut redis).await;
     }
+
     Ok(deleted)
+}
+
+pub async fn log_revoked_tokens_count(redis: &mut Connection) {
+    let redis_result: RedisResult<usize> = redis.hlen(JWT_REDIS_REVOKED_LIST_KEY).await;
+    match redis_result {
+        Ok(revoked_tokens_count) => {
+            tracing::debug!(
+                "REDIS: count of revoked jwt tokens: {}",
+                revoked_tokens_count
+            );
+        }
+        Err(e) => {
+            tracing::error!("{}", e);
+        }
+    }
 }
 
 pub async fn log_revoked_tokens(redis: &mut Connection) {
@@ -87,7 +106,7 @@ pub async fn log_revoked_tokens(redis: &mut Connection) {
 
     match redis_result {
         Ok(revoked_tokens) => {
-            tracing::trace!("redis -> list of revoked jwt tokens: {:#?}", revoked_tokens);
+            tracing::trace!("REDIS: list of revoked jwt tokens: {:#?}", revoked_tokens);
         }
         Err(e) => {
             tracing::error!("{}", e);

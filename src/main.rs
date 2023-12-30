@@ -1,7 +1,7 @@
 use axum_web::{
     api::router,
     infrastructure::{postgres, redis},
-    shared::{config, state::AppState},
+    application::shared::{config, state::AppState},
 };
 use std::sync::Arc;
 use tokio::{signal, sync::Mutex};
@@ -10,12 +10,17 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
+    // tracing configuration
+    let filter_layer = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "axum_web=trace".into());
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .compact()
+        .with_target(false)
+        .with_file(true)
+        .with_line_number(true);
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "axum_web=trace".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
+        .with(filter_layer)
+        .with(fmt_layer)
         .init();
 
     tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
@@ -73,9 +78,9 @@ async fn main() {
 
     // start the service
     axum::serve(listener, app)
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .unwrap();
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
 
     tracing::info!("server shutdown successfully.");
 }

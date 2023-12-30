@@ -2,7 +2,7 @@ use chrono::Utc;
 use sqlx::query_as;
 use uuid::Uuid;
 
-use crate::{domain::model::user::User, shared::state::SharedState};
+use crate::{domain::models::user::User, application::shared::state::SharedState};
 
 pub async fn all_users(state: &SharedState) -> Option<Vec<User>> {
     match query_as::<_, User>("SELECT * FROM users")
