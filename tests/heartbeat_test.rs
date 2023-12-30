@@ -22,11 +22,15 @@ async fn heartbeat_test() {
     let response = reqwest::get(&url).await.unwrap();
     let body = response.text().await.unwrap();
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["service"], "axum-web");
+    assert_eq!(json["version"], "1");
     assert_eq!(json["heartbeat-id"], heartbeat_id);
 
     // fetch using hyper
     let body = fetch_url_hyper(&url).await.unwrap();
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["service"], "axum-web");
+    assert_eq!(json["version"], "1");
     assert_eq!(json["heartbeat-id"], heartbeat_id);
 }
 

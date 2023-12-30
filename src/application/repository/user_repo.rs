@@ -2,7 +2,7 @@ use chrono::Utc;
 use sqlx::query_as;
 use uuid::Uuid;
 
-use crate::{domain::models::user::User, application::shared::state::SharedState};
+use crate::{application::{shared::state::SharedState, app_const::USER_ROLE_GUEST}, domain::models::user::User};
 
 pub async fn all_users(state: &SharedState) -> Option<Vec<User>> {
     match query_as::<_, User>("SELECT * FROM users")
@@ -26,6 +26,8 @@ pub async fn add_user(user: User, state: &SharedState) -> Option<User> {
          email,
          password_hash,
          password_salt,
+         active,
+         roles,
          created_at,
          updated_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -36,6 +38,8 @@ pub async fn add_user(user: User, state: &SharedState) -> Option<User> {
     .bind(user.email)
     .bind(user.password_hash)
     .bind(user.password_salt)
+    .bind(true)
+    .bind(USER_ROLE_GUEST)
     .bind(time_now)
     .bind(time_now)
     .fetch_one(&state.pgpool)
@@ -90,8 +94,10 @@ pub async fn update_user(id: Uuid, user: User, state: &SharedState) -> Option<Us
          email = $3,
          password_hash = $4,
          password_salt = $5,
-         updated_at = $6
-         WHERE id = $7
+         active = $6,
+         roles = $7,
+         updated_at = $8
+         WHERE id = $9
          RETURNING users.*"#,
     )
     .bind(user.id)
@@ -99,6 +105,8 @@ pub async fn update_user(id: Uuid, user: User, state: &SharedState) -> Option<Us
     .bind(user.email)
     .bind(user.password_hash)
     .bind(user.password_salt)
+    .bind(user.active)
+    .bind(user.roles)
     .bind(time_now)
     .bind(id)
     .fetch_one(&state.pgpool)

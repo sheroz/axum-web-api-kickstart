@@ -12,10 +12,11 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::application::{
-    redis_service,
-    security::auth_error::*,
+    security::{self, auth_error::*},
     shared::{config, state::SharedState},
 };
+
+use super::jwt_auth;
 
 /// [JWT Claims]
 /// [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4)
@@ -33,6 +34,17 @@ pub struct JwtClaims {
     pub iat: usize,
     /// Expiration Time
     pub exp: usize,
+    /// Roles
+    pub roles: String,
+}
+
+impl JwtClaims {
+    pub fn validate_role_admin(&self) -> Result<(), AuthError> {
+        if !security::roles::is_role_admin(&self.roles) {
+            return Err(AuthError::WrongCredentials);
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -64,19 +76,11 @@ where
             AuthError::WrongCredentials
         })?;
 
-        // check for revoked tokens
-        let shared_state: SharedState = Arc::from_ref(state);
-
-        match redis_service::exists_in_revoked(&token_data.claims, &shared_state).await {
-            Some(revoked) => {
-                if revoked {
-                    tracing::error!("Access denied (revoked token): {:#?}", token_data.claims);
-                    Err(AuthError::WrongCredentials)
-                } else {
-                    Ok(token_data.claims)
-                }
-            }
-            None => Err(AuthError::InternalServerError),
+        // check for revoked tokens if enabled by configuration
+        if config::get().jwt_use_revoked_list {
+            let shared_state: SharedState = Arc::from_ref(state);
+            jwt_auth::validate_revoked(&token_data.claims, &shared_state).await?
         }
+        Ok(token_data.claims)
     }
 }

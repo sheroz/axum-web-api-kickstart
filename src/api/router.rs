@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use super::{auth, users};
 
-use crate::application::{security::jwt_claims::JwtClaims, shared::state::SharedState};
+use crate::application::{security::jwt_claims::JwtClaims, shared::state::SharedState, app_const::API_VERSION};
 
 pub fn routes(state: SharedState) -> Router {
     // build the service routes
@@ -42,6 +42,7 @@ pub async fn logging_middleware(request: Request<Body>, next: Next) -> Response 
 async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     let map = HashMap::from([
         ("service".to_string(), "axum-web".to_string()),
+        ("version".to_string(), API_VERSION.to_string()),
         ("heartbeat-id".to_string(), id),
     ]);
     Json(map)

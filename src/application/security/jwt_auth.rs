@@ -1,7 +1,11 @@
-use crate::application::{
-    app_const::*,
-    redis_service,
-    shared::{config, state::SharedState},
+use crate::{
+    application::{
+        app_const::*,
+        redis_service,
+        repository::user_repo,
+        shared::{config, state::SharedState},
+    },
+    domain::models::user::User,
 };
 use uuid::Uuid;
 
@@ -15,7 +19,11 @@ pub struct JwtTokens {
 pub async fn logout(refresh_token: &str, state: &SharedState) -> Result<(), AuthError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
     if config::get().jwt_use_revoked_list {
+        // decode and validate the refresh token
         let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
+        if !validate_token_type(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN) {
+            return Err(AuthError::InvalidToken);
+        }
         revoke_refresh_token(&refresh_claims, state).await
     } else {
         Err(AuthError::NotAcceptable)
@@ -23,53 +31,71 @@ pub async fn logout(refresh_token: &str, state: &SharedState) -> Result<(), Auth
 }
 
 pub async fn refresh(refresh_token: &str, state: &SharedState) -> Result<JwtTokens, AuthError> {
-    // decode the refresh token
+    // decode and validate the refresh token
     let refresh_claims = decode_token(refresh_token, &jsonwebtoken::Validation::default())?;
+    if !validate_token_type(&refresh_claims, JWT_JTI_PEFIX_REFRESH_TOKEN) {
+        return Err(AuthError::InvalidToken);
+    }
 
     // checking the configuration if the usage of the list of revoked tokens is enabled
     if config::get().jwt_use_revoked_list {
         revoke_refresh_token(&refresh_claims, state).await?;
     }
 
-    // decode the access token
-    let access_token = &refresh_claims.sub;
-    let mut validation = jsonwebtoken::Validation::default();
-    validation.validate_exp = false;
-    let access_claims = decode_token(access_token, &validation)?;
+    let user_id = decode_user_id(&refresh_claims)?;
+    if let Some(user) = user_repo::get_user(user_id, state).await {
+        let tokens = generate_tokens(user);
+        return Ok(tokens);
+    }
+    Err(AuthError::InternalServerError)
+}
 
-    // using refresh token rotation technique
-    let user_id = access_claims.sub;
-    let tokens = generate_tokens(user_id);
-    Ok(tokens)
+pub fn decode_user_id(claims: &JwtClaims) -> Result<Uuid, AuthError> {
+    if claims.jti.starts_with(JWT_JTI_PEFIX_ACCESS_TOKEN) {
+        return Ok(claims.sub.parse().unwrap());
+    }
+    if claims.jti.starts_with(JWT_JTI_PEFIX_REFRESH_TOKEN) {
+        let access_token = &claims.sub;
+        let mut validation = jsonwebtoken::Validation::default();
+        validation.validate_exp = false;
+        // decode the access token
+        let access_claims = decode_token(access_token, &validation)?;
+        return Ok(access_claims.sub.parse().unwrap());
+    }
+    Err(AuthError::InvalidToken)
 }
 
 pub async fn cleanup_revoked_and_expired(
     _access_claims: &JwtClaims,
     state: &SharedState,
-) -> Result<(), AuthError> {
+) -> Result<usize, AuthError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
     if !config::get().jwt_use_revoked_list {
         return Err(AuthError::NotAcceptable);
     }
 
-    if !redis_service::cleanup_expired(state).await {
-        return Err(AuthError::InternalServerError);
+    if let Some(deleted) = redis_service::cleanup_expired(state).await {
+        return Ok(deleted);
     }
-    Ok(())
+    Err(AuthError::InternalServerError)
+}
+
+pub fn validate_token_type(claims: &JwtClaims, expected_prefix: &str) -> bool {
+    if claims.jti.starts_with(expected_prefix) {
+        return true; 
+    }
+    tracing::error!(
+        "Invalid token type. Expected {}, Found {}",
+        JWT_JTI_PEFIX_REFRESH_TOKEN,
+        &claims.jti[..2]
+    );
+    false
 }
 
 async fn revoke_refresh_token(
     refresh_claims: &JwtClaims,
     state: &SharedState,
 ) -> Result<(), AuthError> {
-    if !refresh_claims.jti.starts_with(JWT_JTI_PEFIX_REFRESH_TOKEN) {
-        tracing::error!(
-            "Invalid token type. Expected {}, Found {}",
-            JWT_JTI_PEFIX_REFRESH_TOKEN,
-            &refresh_claims.jti[..2]
-        );
-        return Err(AuthError::InvalidToken);
-    }
 
     // check the refresh token in revoked list
     validate_revoked(refresh_claims, state).await?;
@@ -88,16 +114,17 @@ async fn revoke_refresh_token(
     Err(AuthError::InternalServerError)
 }
 
-pub fn generate_tokens(user_id: String) -> JwtTokens {
+pub fn generate_tokens(user: User) -> JwtTokens {
     let config = config::get();
     let time_now = chrono::Utc::now();
 
     let access_claims = JwtClaims {
-        sub: user_id,
+        sub: user.id.to_string(),
         jti: format!("{}:{}", JWT_JTI_PEFIX_ACCESS_TOKEN, Uuid::new_v4()),
         iat: time_now.timestamp() as usize,
         exp: (time_now + chrono::Duration::seconds(config.jwt_expire_access_token_seconds))
             .timestamp() as usize,
+        roles: user.roles.clone(),
     };
 
     let access_token = jsonwebtoken::encode(
@@ -113,6 +140,7 @@ pub fn generate_tokens(user_id: String) -> JwtTokens {
         iat: time_now.timestamp() as usize,
         exp: (time_now + chrono::Duration::seconds(config.jwt_expire_refresh_token_seconds))
             .timestamp() as usize,
+        roles: user.roles,
     };
 
     let refresh_token = jsonwebtoken::encode(
@@ -154,11 +182,11 @@ fn decode_token(
     Ok(token_data.claims)
 }
 
-async fn validate_revoked(claims: &JwtClaims, state: &SharedState) -> Result<(), AuthError> {
-    match redis_service::exists_in_revoked(claims, state).await {
+pub async fn validate_revoked(claims: &JwtClaims, state: &SharedState) -> Result<(), AuthError> {
+    let user_id = decode_user_id(claims)?;
+    match redis_service::is_revoked(claims, user_id, state).await {
         Some(revoked) => {
             if revoked {
-                tracing::error!("Access denied (revoked token): {:#?}", claims);
                 return Err(AuthError::WrongCredentials);
             }
         }

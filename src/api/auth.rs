@@ -6,6 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::application::{
     repository::user_repo,
@@ -14,13 +15,18 @@ use crate::application::{
         jwt_auth::{self, JwtTokens},
         jwt_claims::JwtClaims,
     },
-    shared::state::SharedState,
+    shared::state::SharedState, redis_service,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LoginUser {
     username: String,
     password_hash: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RevokeUser {
+    id: Uuid,
 }
 
 pub fn routes() -> Router<SharedState> {
@@ -47,9 +53,9 @@ async fn login_handler(
     Json(login): Json<LoginUser>,
 ) -> Result<Response, AuthError> {
     if let Some(user) = user_repo::get_user_by_username(&login.username, &state).await {
-        if user.password_hash == login.password_hash {
+        if user.active && user.password_hash == login.password_hash {
             tracing::trace!("access granted: {}", user.id);
-            let tokens = jwt_auth::generate_tokens(user.id.to_string());
+            let tokens = jwt_auth::generate_tokens(user);
             let response = tokens_to_response(tokens);
             return Ok(response);
         }
@@ -67,29 +73,46 @@ async fn logout_handler(
     jwt_auth::logout(&refresh_token, &state).await
 }
 
-// revokes all issued tokens
-async fn revoke_all_handler(State(_state): State<SharedState>) -> impl IntoResponse {
-    // ToDo: implement role based validation: is_role(admin)
-    AuthError::NotAcceptable
+// revoke all issued tokens until now
+async fn revoke_all_handler(
+    State(state): State<SharedState>,
+    access_claims: JwtClaims,
+) -> impl IntoResponse {
+    access_claims.validate_role_admin()?;
+    if !redis_service::revoke_global(&state).await {
+        return Err(AuthError::InternalServerError);
+    }
+    Ok(())
 }
 
-// revokes all tokens issued to user
+// revoke tokens issued to user until now
 async fn revoke_user_handler(
-    State(_state): State<SharedState>,
-    user_id: String,
+    State(state): State<SharedState>,
+    access_claims: JwtClaims,
+    Json(revoke_user): Json<RevokeUser>,
 ) -> impl IntoResponse {
-    // ToDo: implement role based validation: is_role(admin)
-    tracing::trace!("user_id: {}", user_id);
-    AuthError::NotAcceptable
+    if access_claims.sub != revoke_user.id.to_string() {
+        // only admin can revoke tokens of other users
+        access_claims.validate_role_admin()?;
+    }
+    tracing::trace!("revoke_user: {:?}", revoke_user);
+    if !redis_service::revoke_user_tokens(&revoke_user.id.to_string(), &state).await {
+        return Err(AuthError::InternalServerError);
+    }
+    Ok(())
 }
 
 async fn cleanup_handler(
     State(state): State<SharedState>,
     access_claims: JwtClaims,
-) -> impl IntoResponse {
-    // ToDo: implement role based validation: is_role(admin)
+) -> Result<Response, AuthError> {
+    access_claims.validate_role_admin()?;
     tracing::trace!("authentication details: {:#?}", access_claims);
-    jwt_auth::cleanup_revoked_and_expired(&access_claims, &state).await
+    let deleted = jwt_auth::cleanup_revoked_and_expired(&access_claims, &state).await?;
+    let json = json!({
+        "deleted_tokens": deleted,
+    });
+    Ok(Json(json).into_response())
 }
 
 fn tokens_to_response(jwt_tokens: JwtTokens) -> Response {

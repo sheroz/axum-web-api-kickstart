@@ -27,6 +27,7 @@ async fn list_users_handler(
     access_claims: JwtClaims,
     State(state): State<SharedState>,
 ) -> Result<Json<Vec<User>>, impl IntoResponse> {
+    // ToDo: check access control
     tracing::trace!("authentication details: {:#?}", access_claims);
     match user_repo::all_users(&state).await {
         Some(users) => Ok(Json(users)),
@@ -51,6 +52,7 @@ async fn get_user_handler(
     Path(id): Path<Uuid>,
     State(state): State<SharedState>,
 ) -> Result<Json<User>, impl IntoResponse> {
+    // ToDo: check access control
     tracing::trace!("id: {}", id);
     tracing::trace!("authentication details: {:#?}", access_claims);
     match user_repo::get_user(id, &state).await {
@@ -65,6 +67,7 @@ async fn update_user_handler(
     State(state): State<SharedState>,
     Json(user): Json<User>,
 ) -> Result<Json<User>, impl IntoResponse> {
+    // ToDo: check access control
     tracing::trace!("id: {}", id);
     tracing::trace!("authentication details: {:#?}", access_claims);
     match user_repo::update_user(id, user, &state).await {
@@ -78,6 +81,7 @@ async fn delete_user_handler(
     Path(id): Path<Uuid>,
     State(state): State<SharedState>,
 ) -> impl IntoResponse {
+    // ToDo: check access control
     tracing::trace!("id: {}", id);
     tracing::trace!("authentication details: {:#?}", access_claims);
     match user_repo::delete_user(id, &state).await {
