@@ -72,22 +72,15 @@ async fn main() {
     tracing::info!("listening on {}", addr);
 
     // start the service
-    axum::serve(listener, app).await.unwrap();
-
-    /*
-       // hyper v1 => shutdown requires boilerplate logic now :(
-       // run the hyper service
-       hyper::Server::bind(&addr)
-       .serve(routes.into_make_service())
-       .with_graceful_shutdown(shutdown_signal())
-       .await
-       .unwrap();
-    */
+    axum::serve(listener, app)
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .unwrap();
 
     tracing::info!("server shutdown successfully.");
 }
 
-async fn _shutdown_signal() {
+async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
