@@ -73,6 +73,7 @@ async fn cleanup_handler(
     State(state): State<SharedState>,
     access_claims: JwtClaims
 ) -> impl IntoResponse {
+    // ToDo: implement role based validation: is_role(admin)
     tracing::debug!("entered: cleanup_handler()");
     tracing::trace!("authentication details: {:#?}", access_claims);
     jwt_auth::cleanup_revoked_and_expired(&access_claims, &state).await
