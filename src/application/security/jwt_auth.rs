@@ -51,7 +51,7 @@ pub async fn refresh(
 }
 
 pub async fn cleanup_revoked_and_expired(
-    _access_claims: &RefreshClaims,
+    _access_claims: &AccessClaims,
     state: &SharedState,
 ) -> Result<usize, AuthError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled

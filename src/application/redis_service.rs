@@ -51,7 +51,7 @@ async fn is_global_revoked<T: ClaimsMethods>(
             if let Some(exp) = opt_exp {
                 match exp.parse::<usize>() {
                     Ok(global_exp) => {
-                        if global_exp > claims.get_exp() {
+                        if global_exp >= claims.get_iat() {
                             return Some(true);
                         }
                     }
@@ -83,7 +83,7 @@ async fn is_user_revoked<T: ClaimsMethods>(
             if let Some(exp) = opt_exp {
                 match exp.parse::<usize>() {
                     Ok(global_exp) => {
-                        if global_exp > claims.get_exp() {
+                        if global_exp >= claims.get_iat() {
                             return Some(true);
                         }
                     }

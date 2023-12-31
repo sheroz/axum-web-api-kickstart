@@ -81,6 +81,7 @@ pub trait ClaimsMethods {
     fn validate_role_admin(&self) -> Result<(), AuthError>;
     fn get_sub(&self) -> &str;
     fn get_exp(&self) -> usize;
+    fn get_iat(&self) -> usize;
     fn get_jti(&self) -> &str;
 }
 
@@ -90,6 +91,10 @@ impl ClaimsMethods for AccessClaims {
     }
     fn get_sub(&self) -> &str {
         &self.sub
+    }
+
+    fn get_iat(&self) -> usize {
+        self.iat
     }
 
     fn get_exp(&self) -> usize {
@@ -106,6 +111,10 @@ impl ClaimsMethods for RefreshClaims {
     }
     fn get_sub(&self) -> &str {
         &self.sub
+    }
+
+    fn get_iat(&self) -> usize {
+        self.iat
     }
 
     fn get_exp(&self) -> usize {

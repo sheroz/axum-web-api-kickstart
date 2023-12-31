@@ -14,7 +14,7 @@ use crate::application::{
     security::{
         auth_error::AuthError,
         jwt_auth::{self, JwtTokens},
-        jwt_claims::{RefreshClaims, ClaimsMethods}
+        jwt_claims::{AccessClaims, RefreshClaims, ClaimsMethods}
     },
     shared::state::SharedState,
 };
@@ -27,7 +27,7 @@ struct LoginUser {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RevokeUser {
-    id: Uuid,
+    user_id: Uuid,
 }
 
 pub fn routes() -> Router<SharedState> {
@@ -46,7 +46,7 @@ async fn login_handler(
 ) -> Result<Response, AuthError> {
     if let Some(user) = user_repo::get_user_by_username(&login.username, &state).await {
         if user.active && user.password_hash == login.password_hash {
-            tracing::trace!("access granted: {}", user.id);
+            tracing::trace!("access granted, user: {}", user.id);
             let tokens = jwt_auth::generate_tokens(user);
             let response = tokens_to_response(tokens);
             return Ok(response);
@@ -77,7 +77,7 @@ async fn refresh_handler(
 // revoke all issued tokens until now
 async fn revoke_all_handler(
     State(state): State<SharedState>,
-    access_claims: RefreshClaims,
+    access_claims: AccessClaims,
 ) -> impl IntoResponse {
     access_claims.validate_role_admin()?;
     if !redis_service::revoke_global(&state).await {
@@ -89,15 +89,15 @@ async fn revoke_all_handler(
 // revoke tokens issued to user until now
 async fn revoke_user_handler(
     State(state): State<SharedState>,
-    access_claims: RefreshClaims,
+    access_claims: AccessClaims,
     Json(revoke_user): Json<RevokeUser>,
 ) -> impl IntoResponse {
-    if access_claims.sub != revoke_user.id.to_string() {
+    if access_claims.sub != revoke_user.user_id.to_string() {
         // only admin can revoke tokens of other users
         access_claims.validate_role_admin()?;
     }
     tracing::trace!("revoke_user: {:?}", revoke_user);
-    if !redis_service::revoke_user_tokens(&revoke_user.id.to_string(), &state).await {
+    if !redis_service::revoke_user_tokens(&revoke_user.user_id.to_string(), &state).await {
         return Err(AuthError::InternalServerError);
     }
     Ok(())
@@ -105,7 +105,7 @@ async fn revoke_user_handler(
 
 async fn cleanup_handler(
     State(state): State<SharedState>,
-    access_claims: RefreshClaims,
+    access_claims: AccessClaims,
 ) -> Result<Response, AuthError> {
     access_claims.validate_role_admin()?;
     tracing::trace!("authentication details: {:#?}", access_claims);
