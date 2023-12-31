@@ -14,7 +14,7 @@ use crate::application::{
     security::{
         auth_error::AuthError,
         jwt_auth::{self, JwtTokens},
-        jwt_claims::JwtClaims,
+        jwt_claims::{RefreshClaims, ClaimsMethods}
     },
     shared::state::SharedState,
 };
@@ -59,7 +59,7 @@ async fn login_handler(
 
 async fn logout_handler(
     State(state): State<SharedState>,
-    refresh_claims: JwtClaims,
+    refresh_claims: RefreshClaims,
 ) -> impl IntoResponse {
     tracing::trace!("refresh_claims: {:?}", refresh_claims);
     jwt_auth::logout(refresh_claims, state).await
@@ -67,7 +67,7 @@ async fn logout_handler(
 
 async fn refresh_handler(
     State(state): State<SharedState>,
-    refresh_claims: JwtClaims,
+    refresh_claims: RefreshClaims,
 ) -> Result<Response, AuthError> {
     let new_tokens = jwt_auth::refresh(refresh_claims, state).await?;
     let response = tokens_to_response(new_tokens);
@@ -77,7 +77,7 @@ async fn refresh_handler(
 // revoke all issued tokens until now
 async fn revoke_all_handler(
     State(state): State<SharedState>,
-    access_claims: JwtClaims,
+    access_claims: RefreshClaims,
 ) -> impl IntoResponse {
     access_claims.validate_role_admin()?;
     if !redis_service::revoke_global(&state).await {
@@ -89,7 +89,7 @@ async fn revoke_all_handler(
 // revoke tokens issued to user until now
 async fn revoke_user_handler(
     State(state): State<SharedState>,
-    access_claims: JwtClaims,
+    access_claims: RefreshClaims,
     Json(revoke_user): Json<RevokeUser>,
 ) -> impl IntoResponse {
     if access_claims.sub != revoke_user.id.to_string() {
@@ -105,7 +105,7 @@ async fn revoke_user_handler(
 
 async fn cleanup_handler(
     State(state): State<SharedState>,
-    access_claims: JwtClaims,
+    access_claims: RefreshClaims,
 ) -> Result<Response, AuthError> {
     access_claims.validate_role_admin()?;
     tracing::trace!("authentication details: {:#?}", access_claims);

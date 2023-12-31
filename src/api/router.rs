@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use super::{auth, users};
 
-use crate::application::{security::jwt_claims::JwtClaims, shared::state::SharedState, app_const::API_VERSION};
+use crate::application::{security::jwt_claims::RefreshClaims, shared::state::SharedState, app_const::API_VERSION};
 
 pub fn routes(state: SharedState) -> Router {
     // build the service routes
@@ -48,7 +48,7 @@ async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
     Json(map)
 }
 
-async fn root_handler(access_claims: JwtClaims) -> impl IntoResponse {
+async fn root_handler(access_claims: RefreshClaims) -> impl IntoResponse {
     tracing::trace!("authentication details: {:#?}", access_claims);
     Json(json!({"message": "Hello from Axum-Web!"}))
 }
