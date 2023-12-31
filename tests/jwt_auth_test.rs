@@ -95,13 +95,14 @@ async fn login(username: &str, password_hash: &str) -> (String, String) {
     (access_token, refresh_token)
 }
 
-async fn refresh(refersh_token: &str) -> GenericResult<(String, String)> {
+async fn refresh(refresh_token: &str) -> GenericResult<(String, String)> {
     let url = format!("{}/auth/refresh", config::get().service_http_addr());
 
+    let authorization = format!("Bearer {}", refresh_token);
     let response = reqwest::Client::new()
         .post(&url)
         .header("Accept", "application/json")
-        .body(refersh_token.to_string())
+        .header("Authorization", authorization)
         .send()
         .await?;
 
@@ -120,10 +121,11 @@ async fn refresh(refersh_token: &str) -> GenericResult<(String, String)> {
 async fn logout(refresh_token: &str) -> GenericResult<reqwest::StatusCode> {
     let url = format!("{}/auth/logout", config::get().service_http_addr());
 
+    let authorization = format!("Bearer {}", refresh_token);
     let response = reqwest::Client::new()
         .post(&url)
         .header("Accept", "application/json")
-        .body(refresh_token.to_string())
+        .header("Authorization", authorization)
         .send()
         .await?;
 

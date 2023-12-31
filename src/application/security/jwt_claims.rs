@@ -34,16 +34,36 @@ pub struct JwtClaims {
     pub iat: usize,
     /// Expiration Time
     pub exp: usize,
+    /// Reference to paired token
+    pub prf: String,
+    /// Token Type
+    pub typ: u8,
     /// Roles
     pub roles: String,
 }
-
 impl JwtClaims {
     pub fn validate_role_admin(&self) -> Result<(), AuthError> {
         if !security::roles::is_role_admin(&self.roles) {
             return Err(AuthError::WrongCredentials);
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum JwtTokenType {
+    AccessToken,
+    RefreshToken,
+    UnknownToken,
+}
+impl From<u8> for JwtTokenType {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Self::AccessToken,
+            1 => Self::RefreshToken,
+            2_u8..=u8::MAX => Self::UnknownToken,
+        }
     }
 }
 

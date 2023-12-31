@@ -9,13 +9,14 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::application::{
+    redis_service,
     repository::user_repo,
     security::{
         auth_error::AuthError,
         jwt_auth::{self, JwtTokens},
         jwt_claims::JwtClaims,
     },
-    shared::state::SharedState, redis_service,
+    shared::state::SharedState,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,15 +40,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/clean-up", post(cleanup_handler))
 }
 
-async fn refresh_handler(
-    State(state): State<SharedState>,
-    refresh_token: String,
-) -> Result<Response, AuthError> {
-    let tokens = jwt_auth::refresh(&refresh_token, &state).await?;
-    let response = tokens_to_response(tokens);
-    Ok(response)
-}
-
 async fn login_handler(
     State(state): State<SharedState>,
     Json(login): Json<LoginUser>,
@@ -67,10 +59,19 @@ async fn login_handler(
 
 async fn logout_handler(
     State(state): State<SharedState>,
-    refresh_token: String,
+    refresh_claims: JwtClaims,
 ) -> impl IntoResponse {
-    tracing::trace!("refresh_token: {}", refresh_token);
-    jwt_auth::logout(&refresh_token, &state).await
+    tracing::trace!("refresh_claims: {:?}", refresh_claims);
+    jwt_auth::logout(refresh_claims, state).await
+}
+
+async fn refresh_handler(
+    State(state): State<SharedState>,
+    refresh_claims: JwtClaims,
+) -> Result<Response, AuthError> {
+    let new_tokens = jwt_auth::refresh(refresh_claims, state).await?;
+    let response = tokens_to_response(new_tokens);
+    Ok(response)
 }
 
 // revoke all issued tokens until now
