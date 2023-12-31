@@ -9,7 +9,7 @@ use sqlx::types::Uuid;
 
 use crate::{
     application::{
-        repository::user_repo, security::jwt_claims::JwtClaims, shared::state::SharedState,
+        repository::user_repo, security::jwt_claims::AccessClaims, shared::state::SharedState,
     },
     domain::models::user::User,
 };
@@ -24,7 +24,7 @@ pub fn routes() -> Router<SharedState> {
 }
 
 async fn list_users_handler(
-    access_claims: JwtClaims,
+    access_claims: AccessClaims,
     State(state): State<SharedState>,
 ) -> Result<Json<Vec<User>>, impl IntoResponse> {
     // ToDo: check access control
@@ -36,7 +36,7 @@ async fn list_users_handler(
 }
 
 async fn add_user_handler(
-    access_claims: JwtClaims,
+    access_claims: AccessClaims,
     State(state): State<SharedState>,
     Json(user): Json<User>,
 ) -> impl IntoResponse {
@@ -48,7 +48,7 @@ async fn add_user_handler(
 }
 
 async fn get_user_handler(
-    access_claims: JwtClaims,
+    access_claims: AccessClaims,
     Path(id): Path<Uuid>,
     State(state): State<SharedState>,
 ) -> Result<Json<User>, impl IntoResponse> {
@@ -62,7 +62,7 @@ async fn get_user_handler(
 }
 
 async fn update_user_handler(
-    access_claims: JwtClaims,
+    access_claims: AccessClaims,
     Path(id): Path<Uuid>,
     State(state): State<SharedState>,
     Json(user): Json<User>,
@@ -77,7 +77,7 @@ async fn update_user_handler(
 }
 
 async fn delete_user_handler(
-    access_claims: JwtClaims,
+    access_claims: AccessClaims,
     Path(id): Path<Uuid>,
     State(state): State<SharedState>,
 ) -> impl IntoResponse {

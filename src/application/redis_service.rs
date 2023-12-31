@@ -1,9 +1,8 @@
 use redis::{aio::Connection, AsyncCommands, RedisResult};
 use std::collections::HashMap;
 use tokio::sync::MutexGuard;
-use uuid::Uuid;
 
-use super::{app_const::*, security::jwt_claims::JwtClaims};
+use super::{app_const::*, security::jwt_claims::{RefreshClaims, ClaimsMethods}};
 use crate::application::shared::state::SharedState;
 
 pub async fn revoke_global(state: &SharedState) -> bool {
@@ -40,8 +39,8 @@ pub async fn revoke_user_tokens(user_id: &str, state: &SharedState) -> bool {
     true
 }
 
-async fn is_global_revoked(
-    claims: &JwtClaims,
+async fn is_global_revoked<T: ClaimsMethods>(
+    claims: &T,
     redis: &mut MutexGuard<'_, redis::aio::Connection>,
 ) -> Option<bool> {
     // check in global revoke
@@ -52,7 +51,7 @@ async fn is_global_revoked(
             if let Some(exp) = opt_exp {
                 match exp.parse::<usize>() {
                     Ok(global_exp) => {
-                        if global_exp > claims.exp {
+                        if global_exp >= claims.get_iat() {
                             return Some(true);
                         }
                     }
@@ -71,21 +70,20 @@ async fn is_global_revoked(
     Some(false)
 }
 
-async fn is_user_revoked(
-    claims: &JwtClaims,
-    user_id: Uuid,
+async fn is_user_revoked<T: ClaimsMethods>(
+    claims: &T,
     redis: &mut MutexGuard<'_, redis::aio::Connection>,
 ) -> Option<bool> {
     // check in user revoke
-    let redis_result: RedisResult<Option<String>> = redis
-        .hget(JWT_REDIS_REVOKE_USER_BEFORE_KEY, user_id.to_string())
-        .await;
+    let user_id = claims.get_sub();
+    let redis_result: RedisResult<Option<String>> =
+        redis.hget(JWT_REDIS_REVOKE_USER_BEFORE_KEY, user_id).await;
     match redis_result {
         Ok(opt_exp) => {
             if let Some(exp) = opt_exp {
                 match exp.parse::<usize>() {
                     Ok(global_exp) => {
-                        if global_exp > claims.exp {
+                        if global_exp >= claims.get_iat() {
                             return Some(true);
                         }
                     }
@@ -104,13 +102,13 @@ async fn is_user_revoked(
     Some(false)
 }
 
-async fn is_token_revoked(
-    claims: &JwtClaims,
+async fn is_token_revoked<T: ClaimsMethods>(
+    claims: &T,
     redis: &mut MutexGuard<'_, redis::aio::Connection>,
 ) -> Option<bool> {
     // check the token in revoked list
     let redis_result: RedisResult<bool> = redis
-        .hexists(JWT_REDIS_REVOKED_TOKENS_KEY, &claims.jti)
+        .hexists(JWT_REDIS_REVOKED_TOKENS_KEY, claims.get_jti())
         .await;
     match redis_result {
         Ok(revoked) => Some(revoked),
@@ -121,7 +119,7 @@ async fn is_token_revoked(
     }
 }
 
-pub async fn is_revoked(claims: &JwtClaims, user_id: Uuid, state: &SharedState) -> Option<bool> {
+pub async fn is_revoked<T: std::fmt::Debug + ClaimsMethods>(claims: &T, state: &SharedState) -> Option<bool> {
     let mut redis = state.redis.lock().await;
     match is_global_revoked(claims, &mut redis).await {
         Some(revoked) => {
@@ -135,7 +133,7 @@ pub async fn is_revoked(claims: &JwtClaims, user_id: Uuid, state: &SharedState) 
         }
     }
 
-    match is_user_revoked(claims, user_id, &mut redis).await {
+    match is_user_revoked(claims, &mut redis).await {
         Some(revoked) => {
             if revoked {
                 tracing::error!("Access denied (user revoked): {:#?}", claims);
@@ -162,16 +160,16 @@ pub async fn is_revoked(claims: &JwtClaims, user_id: Uuid, state: &SharedState) 
     Some(false)
 }
 
-pub async fn revoke_tokens(list_to_revoke: Vec<&JwtClaims>, state: &SharedState) -> bool {
-    // add tokens into revoked list in Redis
+pub async fn revoke_refresh_token(claims: &RefreshClaims, state: &SharedState) -> bool {
+    // adds the both refersh token and its paired access token into revoked list in Redis
     // tokens are tracked by JWT ID that handles the cases of reusing lost tokens and multi-device scenarios
-    tracing::debug!("adding jwt tokens into revoked list: {:#?}", list_to_revoke);
 
     let mut redis = state.redis.lock().await;
-
-    for claims in list_to_revoke {
+    let list_to_revoke = vec![&claims.jti, &claims.prf];
+    tracing::debug!("adding jwt tokens into revoked list: {:#?}", list_to_revoke);
+    for claims_jti in list_to_revoke {
         let redis_result: RedisResult<()> = redis
-            .hset(JWT_REDIS_REVOKED_TOKENS_KEY, &claims.jti, claims.exp)
+            .hset(JWT_REDIS_REVOKED_TOKENS_KEY, claims_jti, claims.exp)
             .await;
         if let Err(e) = redis_result {
             tracing::error!("{}", e);

@@ -15,9 +15,9 @@ The project covers:
 - `JWT` based authentication & authorization
   - access tokens
   - refresh tokens
-  - configuration based tokens expiry
+  - tokens expiry set by configuration
   - refresh tokens rotation technique
-  - configuration based revoked tokens using `Redis`
+  - revoked tokens using `Redis` controlled by configuration
     - revoke all tokens issued until the current time
     - revoke tokens belonging to a user issued until the current time
     - cleanup of revoked tokens

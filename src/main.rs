@@ -26,7 +26,7 @@ async fn main() {
     tracing::info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 
     // load configuration
-    config::load_from_dotenv();
+    config::load();
     let config = config::get();
 
     // connect to redis

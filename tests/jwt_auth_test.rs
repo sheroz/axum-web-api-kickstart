@@ -1,131 +1,126 @@
-use axum_web::application::shared::config;
+use axum_web::application::security::jwt_claims::AccessClaims;
 use reqwest::StatusCode;
-type GenericResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+pub mod common;
+use common::{auth, route, test_config, *};
 
 #[tokio::test]
 #[ignore]
-async fn login_refresh_logout_test() {
-    // load configuration
-    config::load_from_dotenv();
+async fn login_refresh_logout_tests() {
+    // load test configuration
+    test_config::load_test_config();
 
     // try unauthorized access to the root handler
-    assert_eq!(fetch_root("").await.unwrap(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        route::fetch_root("").await.unwrap(),
+        StatusCode::UNAUTHORIZED
+    );
 
-    let username = "admin";
-    let password_hash = "7c44575b741f02d49c3e988ba7aa95a8fb6d90c0ef63a97236fa54bfcfbd9d51";
-
-    let (access_token1, refresh_token1) = login(username, password_hash).await;
+    let (access_token1, refresh_token1) =
+        auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await;
 
     // try authorized access to the root handler
-    assert_eq!(fetch_root(&access_token1).await.unwrap(), StatusCode::OK);
+    assert_eq!(
+        route::fetch_root(&access_token1).await.unwrap(),
+        StatusCode::OK
+    );
 
-    let (access_token2, refresh_token2) = refresh(&refresh_token1).await.unwrap();
+    let (access_token2, refresh_token2) = auth::refresh(&refresh_token1).await.unwrap();
 
     // try access to the root handler with old token
     assert_eq!(
-        fetch_root(&access_token1).await.unwrap(),
+        route::fetch_root(&access_token1).await.unwrap(),
         StatusCode::UNAUTHORIZED
     );
 
     // try access to the root handler with new token
-    assert_eq!(fetch_root(&access_token2).await.unwrap(), StatusCode::OK);
+    assert_eq!(
+        route::fetch_root(&access_token2).await.unwrap(),
+        StatusCode::OK
+    );
 
     // try logout with old token
     assert_eq!(
-        logout(&refresh_token1).await.unwrap(),
+        auth::logout(&refresh_token1).await.unwrap(),
         StatusCode::UNAUTHORIZED
     );
 
     // try logout with new token
-    assert_eq!(logout(&refresh_token2).await.unwrap(), StatusCode::OK);
+    assert_eq!(auth::logout(&refresh_token2).await.unwrap(), StatusCode::OK);
 
     // try access to the root handler with new token
     assert_eq!(
-        fetch_root(&access_token2).await.unwrap(),
+        route::fetch_root(&access_token2).await.unwrap(),
         StatusCode::UNAUTHORIZED
     );
 }
 
-async fn fetch_root(access_token: &str) -> GenericResult<reqwest::StatusCode> {
-    let config = config::get();
-    let url = format!("{}/", config.service_http_addr());
+#[tokio::test]
+#[ignore]
+async fn revoke_user_test() {
+    // need pause to ignore previous revoke results
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-    let authorization = format!("Bearer {}", access_token);
-    let response = reqwest::Client::new()
-        .get(&url)
-        .header("Authorization", authorization)
-        .send()
-        .await?;
+    // load test configuration
+    let config = test_config::load_test_config();
 
-    let response_status = response.status();
-    if response_status == reqwest::StatusCode::OK {
-        let body = response.text().await.unwrap();
-        let result: serde_json::Value = serde_json::from_str(&body).unwrap();
-        let expected = serde_json::json!({"message": "Hello from Axum-Web!"});
-        assert_eq!(result, expected);
-    }
-    Ok(response_status)
-}
-
-async fn login(username: &str, password_hash: &str) -> (String, String) {
-    let url = format!("{}/auth/login", config::get().service_http_addr());
-    let params = serde_json::json!(
-        {
-            "username": username,
-            "password_hash": password_hash
-        }
+    // try unauthorized access to the root handler
+    assert_eq!(
+        route::fetch_root("").await.unwrap(),
+        StatusCode::UNAUTHORIZED
     );
 
-    let response = reqwest::Client::new()
-        .post(&url)
-        .header("Accept", "application/json")
-        .json(&params)
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    let (access_token1, _refresh_token1) =
+        auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await;
 
-    let json: serde_json::Value = response.json().await.unwrap();
-    let access_token = json["access_token"].as_str().unwrap().to_string();
-    let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
+    let access_claims = jsonwebtoken::decode::<AccessClaims>(
+        &access_token1,
+        &config.jwt_keys.decoding,
+        &jsonwebtoken::Validation::default(),
+    )
+    .unwrap()
+    .claims;
 
-    assert!(!access_token.is_empty());
-    assert!(!refresh_token.is_empty());
+    let user_id = access_claims.sub;
+    auth::revoke_user(&access_token1, &user_id).await.unwrap();
 
-    (access_token, refresh_token)
+    // try access to the root handler with the same token again
+    assert_eq!(
+        route::fetch_root(&access_token1).await.unwrap(),
+        StatusCode::UNAUTHORIZED
+    );
+
+    // need pause to pass next tests
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
 }
 
-async fn refresh(refersh_token: &str) -> GenericResult<(String, String)> {
-    let url = format!("{}/auth/refresh", config::get().service_http_addr());
+#[tokio::test]
+#[ignore]
+async fn revoke_all_test() {
+    // need pause to ignore previous revoke results
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-    let response = reqwest::Client::new()
-        .post(&url)
-        .header("Accept", "application/json")
-        .body(refersh_token.to_string())
-        .send()
-        .await?;
+    // load test configuration
+    test_config::load_test_config();
 
-    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    // try unauthorized access to the root handler
+    assert_eq!(
+        route::fetch_root("").await.unwrap(),
+        StatusCode::UNAUTHORIZED
+    );
 
-    let json: serde_json::Value = response.json().await.unwrap();
-    let access_token = json["access_token"].as_str().unwrap().to_string();
-    let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
+    let (access_token1, _refresh_token1) =
+        auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await;
 
-    assert!(!access_token.is_empty());
-    assert!(!refresh_token.is_empty());
+    auth::revoke_all(&access_token1).await.unwrap();
 
-    Ok((access_token, refresh_token))
-}
+    // try access to the root handler with the same token again
+    assert_eq!(
+        route::fetch_root(&access_token1).await.unwrap(),
+        StatusCode::UNAUTHORIZED
+    );
 
-async fn logout(refresh_token: &str) -> GenericResult<reqwest::StatusCode> {
-    let url = format!("{}/auth/logout", config::get().service_http_addr());
-
-    let response = reqwest::Client::new()
-        .post(&url)
-        .header("Accept", "application/json")
-        .body(refresh_token.to_string())
-        .send()
-        .await?;
-
-    Ok(response.status())
+    // need pause to pass next tests
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 }

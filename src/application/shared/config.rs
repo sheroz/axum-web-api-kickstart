@@ -29,6 +29,7 @@ pub struct Config {
     pub jwt_expire_refresh_token_seconds: i64, 
     pub jwt_use_revoked_list: bool
 }
+
 pub struct JwtKeys {
     pub encoding: EncodingKey,
     pub decoding: DecodingKey,
@@ -77,9 +78,17 @@ impl Config {
     }
 }
 
-pub fn load_from_dotenv() {
-    // load .env file
-    dotenv::dotenv().expect("Failed to load .env file");
+pub fn load() {
+
+    if env_get_or("ENV_TEST", "0") == "1" {
+        // load from .env_test file
+        dotenv::from_filename(".env_test").expect("Failed to load .env_test file");
+        tracing::info!(".env_test file loaded");
+    } else {
+        // load from .env file
+        dotenv::dotenv().expect("Failed to load .env file");
+        tracing::info!(".env file loaded");
+    }
 
     let jwt_secret = env_get("JWT_SECRET");
 
@@ -120,6 +129,14 @@ fn env_get(key: &str) -> String {
             panic!("{msg}");
         }
     }
+}
+
+#[inline]
+fn env_get_or(key: &str, value: &str) -> String {
+    if let Ok(v) = std::env::var(key) {
+        return v;
+    }
+    value.to_string()
 }
 
 #[inline]
