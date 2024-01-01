@@ -17,7 +17,7 @@ pub struct JwtTokens {
 
 pub async fn logout(refresh_claims: RefreshClaims, state: SharedState) -> Result<(), AuthError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
-    if config::get().jwt_use_revoked_list {
+    if config::get().jwt_enable_revoked_tokens {
         // decode and validate the refresh token
         if !validate_token_type(&refresh_claims, JwtTokenType::RefreshToken) {
             return Err(AuthError::InvalidToken);
@@ -38,7 +38,7 @@ pub async fn refresh(
     }
 
     // checking the configuration if the usage of the list of revoked tokens is enabled
-    if config::get().jwt_use_revoked_list {
+    if config::get().jwt_enable_revoked_tokens {
         revoke_refresh_token(&refresh_claims, &state).await?;
     }
 
@@ -55,7 +55,7 @@ pub async fn cleanup_revoked_and_expired(
     state: &SharedState,
 ) -> Result<usize, AuthError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
-    if !config::get().jwt_use_revoked_list {
+    if !config::get().jwt_enable_revoked_tokens {
         return Err(AuthError::NotAcceptable);
     }
 

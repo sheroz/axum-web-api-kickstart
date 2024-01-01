@@ -25,6 +25,23 @@ POST http://127.0.0.1:3000/auth/logout
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
+### revoke user 
+POST http://127.0.0.1:3000/auth/revoke-user
+Content-type: application/json; charset=utf8
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
+
+{ "user_id" : "617646a0-7437-48a0-bb03-a7aa830f8f81" }
+
+### revoke all 
+POST http://127.0.0.1:3000/auth/revoke-all
+Content-type: application/json; charset=utf8
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
+
+### cleanup revoked tokens 
+POST http://127.0.0.1:3000/auth/cleanup
+Content-type: application/json; charset=utf8
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
+
 ### list users
 GET http://127.0.0.1:3000/users
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0

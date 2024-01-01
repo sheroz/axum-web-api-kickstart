@@ -49,6 +49,11 @@ async fn heartbeat_handler(Path(id): Path<String>) -> impl IntoResponse {
 }
 
 async fn root_handler(access_claims: AccessClaims) -> impl IntoResponse {
+    tracing::trace!("current timestamp: {}", chrono::Utc::now().timestamp() as usize);
+    let start = std::time::SystemTime::now();
+    let validation_timestamp = start.duration_since(std::time::UNIX_EPOCH).expect("Time went backwards").as_secs();
+    tracing::trace!("validation_timestamp: {}", validation_timestamp);
+
     tracing::trace!("authentication details: {:#?}", access_claims);
     Json(json!({"message": "Hello from Axum-Web!"}))
 }

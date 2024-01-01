@@ -40,6 +40,12 @@ docker-compose up -d
 cargo run
 ```
 
+run in test configuration
+
+```text
+ENV_TEST=1 cargo run
+```
+
 REST API usage samples: [/tests/endpoints.http](/tests/endpoints.http)
 
 ## Logging

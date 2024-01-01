@@ -4,7 +4,7 @@ use sqlx::{types::Uuid, FromRow};
 
 use crate::application::security;
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize, PartialEq, Clone)]
 pub struct User {
     pub id: Uuid,
     pub username: String,
