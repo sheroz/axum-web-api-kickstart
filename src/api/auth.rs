@@ -35,9 +35,9 @@ pub fn routes() -> Router<SharedState> {
         .route("/login", post(login_handler))
         .route("/logout", post(logout_handler))
         .route("/refresh", post(refresh_handler))
-        .route("/revoke_all", post(revoke_all_handler))
-        .route("/revoke_user", post(revoke_user_handler))
-        .route("/clean-up", post(cleanup_handler))
+        .route("/revoke-all", post(revoke_all_handler))
+        .route("/revoke-user", post(revoke_user_handler))
+        .route("/cleanup", post(cleanup_handler))
 }
 
 async fn login_handler(

@@ -142,7 +142,7 @@ where
     type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        decode_token(parts, state).await
+        decode_token_from_request_part(parts, state).await
     }
 }
 
@@ -158,11 +158,11 @@ where
         parts: &mut Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        decode_token(parts, state).await
+        decode_token_from_request_part(parts, state).await
     }
 }
 
-async fn decode_token<S, T>(parts: &mut Parts, state: &S) -> Result<T, AuthError>
+async fn decode_token_from_request_part<S, T>(parts: &mut Parts, state: &S) -> Result<T, AuthError>
 where
     SharedState: FromRef<S>,
     S: Send + Sync,
@@ -177,21 +177,30 @@ where
             AuthError::WrongCredentials
         })?;
 
-    // decode the user data
+    // decode the token
+    let claims = decode_token::<T>(bearer.token())?;
+
+    // check for revoked tokens if enabled by configuration
+    if config::get().jwt_enable_revoked_tokens {
+        let shared_state: SharedState = Arc::from_ref(state);
+        jwt_auth::validate_revoked(&claims, &shared_state).await?
+    }
+    Ok(claims)
+}
+
+pub fn decode_token<T: for<'de> serde::Deserialize<'de>>(token: &str) -> Result<T, AuthError> {
+    let config = config::get();
+    let mut validation = jsonwebtoken::Validation::default();
+    validation.leeway = config.jwt_validation_leeway_seconds as u64;
     let token_data = jsonwebtoken::decode::<T>(
-        bearer.token(),
-        &config::get().jwt_keys.decoding,
-        &jsonwebtoken::Validation::default(),
+        token,
+        &config.jwt_keys.decoding,
+        &validation,
     )
     .map_err(|_| {
-        tracing::error!("Invalid token: {:#?}", bearer.token());
+        tracing::error!("Invalid token: {}", token);
         AuthError::WrongCredentials
     })?;
 
-    // check for revoked tokens if enabled by configuration
-    if config::get().jwt_use_revoked_list {
-        let shared_state: SharedState = Arc::from_ref(state);
-        jwt_auth::validate_revoked(&token_data.claims, &shared_state).await?
-    }
-    Ok(token_data.claims)
+    Ok(token_data.claims) 
 }
