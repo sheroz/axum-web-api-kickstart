@@ -4,7 +4,7 @@ use super::GenericResult;
 
 const PATH_AUTH: &str = "auth";
 
-pub async fn login(username: &str, password_hash: &str) -> GenericResult<(String, String)> {
+pub async fn login(username: &str, password_hash: &str) -> GenericResult<(reqwest::StatusCode, Option<(String, String)>)> {
     let url = utils::build_url(PATH_AUTH, "login");
 
     let params = format!(
@@ -19,19 +19,24 @@ pub async fn login(username: &str, password_hash: &str) -> GenericResult<(String
         .body(params)
         .send()
         .await?;
-    assert_eq!(response.status(), reqwest::StatusCode::OK);
 
-    let json: serde_json::Value = response.json().await.unwrap();
-    let access_token = json["access_token"].as_str().unwrap().to_string();
-    let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
+    let status_code = response.status();
+    if status_code == reqwest::StatusCode::OK {
+        let json: serde_json::Value = response.json().await.unwrap();
+        let access_token = json["access_token"].as_str().unwrap().to_string();
+        let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
+    
+        assert!(!access_token.is_empty());
+        assert!(!refresh_token.is_empty());
+        
+        let tokens = Some((access_token, refresh_token));
+        return Ok((status_code, tokens));
+    }
+    Ok((status_code, None))
 
-    assert!(!access_token.is_empty());
-    assert!(!refresh_token.is_empty());
-
-    Ok((access_token, refresh_token))
 }
 
-pub async fn refresh(refresh_token: &str) -> GenericResult<(String, String)> {
+pub async fn refresh(refresh_token: &str) -> GenericResult<(reqwest::StatusCode, Option<(String, String)>)> {
     let url = utils::build_url(PATH_AUTH, "refresh");
 
     let authorization = format!("Bearer {}", refresh_token);
@@ -42,16 +47,19 @@ pub async fn refresh(refresh_token: &str) -> GenericResult<(String, String)> {
         .send()
         .await?;
 
-    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    let status_code = response.status();
+    if status_code == reqwest::StatusCode::OK {
+        let json: serde_json::Value = response.json().await.unwrap();
+        let access_token = json["access_token"].as_str().unwrap().to_string();
+        let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
+    
+        assert!(!access_token.is_empty());
+        assert!(!refresh_token.is_empty());
 
-    let json: serde_json::Value = response.json().await.unwrap();
-    let access_token = json["access_token"].as_str().unwrap().to_string();
-    let refresh_token = json["refresh_token"].as_str().unwrap().to_string();
-
-    assert!(!access_token.is_empty());
-    assert!(!refresh_token.is_empty());
-
-    Ok((access_token, refresh_token))
+        let tokens = Some((access_token, refresh_token));
+        return Ok((status_code, tokens));
+    }
+    Ok((status_code, None))
 }
 
 pub async fn logout(refresh_token: &str) -> GenericResult<reqwest::StatusCode> {

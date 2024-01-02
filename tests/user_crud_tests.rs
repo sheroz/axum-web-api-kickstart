@@ -14,14 +14,15 @@ async fn list_users_test() {
     let (status, _) = users::list("xyz").await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (access_token1, _refresh_token1) =
-        auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    assert_eq!(status, StatusCode::OK);
+    let (access_token, _) = result.unwrap();
 
-    let access_claims = jwt_claims::decode_token::<AccessClaims>(&access_token1).unwrap();
+    let access_claims = jwt_claims::decode_token::<AccessClaims>(&access_token).unwrap();
     let user_id = access_claims.sub.parse().unwrap();
 
     // try authorized access to the users handler
-    let (status, result) = users::list(&access_token1).await.unwrap();
+    let (status, result) = users::list(&access_token).await.unwrap();
     assert_eq!(status, reqwest::StatusCode::OK);
     assert!(result.is_some());
 
@@ -40,7 +41,9 @@ async fn get_user_test() {
     let (status, _) = users::get(uuid::Uuid::new_v4(), "").await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (access_token, _) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    assert_eq!(status, StatusCode::OK);
+    let (access_token, _) = result.unwrap();
 
     let access_claims = jwt_claims::decode_token::<AccessClaims>(&access_token).unwrap();
     let user_id = access_claims.sub.parse().unwrap();
@@ -87,7 +90,9 @@ async fn add_get_update_delete_user_test() {
     let status = users::delete(user.id, &access_token).await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (access_token, _) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    assert_eq!(status, StatusCode::OK);
+    let (access_token, _) = result.unwrap();
 
     // add the user
     let (status, result) = users::add(user.clone(), &access_token).await.unwrap();
