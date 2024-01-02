@@ -72,7 +72,7 @@ impl From<u8> for JwtTokenType {
         match value {
             0 => Self::AccessToken,
             1 => Self::RefreshToken,
-            2_u8..=u8::MAX => Self::UnknownToken,
+            _ => Self::UnknownToken,
         }
     }
 }
