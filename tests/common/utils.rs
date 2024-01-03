@@ -6,12 +6,12 @@ pub fn load_test_config() -> &'static config::Config {
     config::get()
 }
 
-pub fn build_url(path: &str, url: &str) -> reqwest::Url {
-    let url = format!("{}/{}/{}",config::get().service_http_addr(), path, url);
+pub fn build_url(version: &str, path: &str, url: &str) -> reqwest::Url {
+    let url = format!("{}/{}/{}/{}",config::get().service_http_addr(), version, path, url);
     reqwest::Url::parse(&url).unwrap()
 }
 
-pub fn build_path(path: &str) -> reqwest::Url {
-    let url = format!("{}/{}",config::get().service_http_addr(), path);
+pub fn build_path(version: &str, path: &str) -> reqwest::Url {
+    let url = format!("{}/{}/{}",config::get().service_http_addr(), version, path);
     reqwest::Url::parse(&url).unwrap()
 }
