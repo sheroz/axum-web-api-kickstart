@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis:/data      
+    ports:
+      - '6379:6379'
+
+  postgres:
+    image: postgres:alpine
+    restart: always
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+  
+  api:
+    build: . 
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env_test_docker
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd app
+        cargo test
+
+volumes:
+  redis:
+  postgres:

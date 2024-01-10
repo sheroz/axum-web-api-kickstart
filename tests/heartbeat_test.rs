@@ -8,8 +8,10 @@ const PATH_HEARTBEAT: &str = "heartbeat";
 const API_V1: &str = "v1";
 
 #[tokio::test]
-#[ignore]
 async fn heartbeat_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 

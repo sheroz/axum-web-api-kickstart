@@ -25,10 +25,10 @@ pub struct Config {
     // JWT
     pub jwt_secret: String,
     pub jwt_keys: JwtKeys,
-    pub jwt_expire_access_token_seconds: i64, 
+    pub jwt_expire_access_token_seconds: i64,
     pub jwt_expire_refresh_token_seconds: i64,
-    pub jwt_validation_leeway_seconds: i64,     
-    pub jwt_enable_revoked_tokens: bool
+    pub jwt_validation_leeway_seconds: i64,
+    pub jwt_enable_revoked_tokens: bool,
 }
 
 pub struct JwtKeys {
@@ -80,15 +80,17 @@ impl Config {
 }
 
 pub fn load() {
-
-    if env_get_or("ENV_TEST", "0") == "1" {
-        // load from .env_test file
-        dotenv::from_filename(".env_test").expect("Failed to load .env_test file");
-        tracing::info!(".env_test file loaded");
+    let env_file = if env_get_or("ENV_TEST", "0") == "1" {
+        ".env_test"
     } else {
-        // load from .env file
-        dotenv::dotenv().expect("Failed to load .env file");
-        tracing::info!(".env file loaded");
+        ".env"
+    };
+
+    // try to load environment variables from file
+    if dotenv::from_filename(env_file).is_ok() {
+        tracing::info!("{} file loaded", env_file);
+    } else {
+        tracing::info!("{} file not found, using existing environment", env_file);
     }
 
     let jwt_secret = env_get("JWT_SECRET");
@@ -110,8 +112,7 @@ pub fn load() {
         jwt_expire_access_token_seconds: env_parse("JWT_EXPIRE_ACCESS_TOKEN_SECONDS"),
         jwt_expire_refresh_token_seconds: env_parse("JWT_EXPIRE_REFRESH_TOKEN_SECONDS"),
         jwt_validation_leeway_seconds: env_parse("JWT_VALIDATION_LEEWAY_SECONDS"),
-        jwt_enable_revoked_tokens: env_parse("JWT_ENABLE_REVOKED_TOKENS")
-        
+        jwt_enable_revoked_tokens: env_parse("JWT_ENABLE_REVOKED_TOKENS"),
     };
 
     tracing::trace!("configuration: {:#?}", config);

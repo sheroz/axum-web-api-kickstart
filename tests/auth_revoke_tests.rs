@@ -5,8 +5,10 @@ pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
-#[ignore]
 async fn revoke_user_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     let config = utils::load_test_config();
 
@@ -38,8 +40,10 @@ async fn revoke_user_test() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn revoke_all_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     let config = utils::load_test_config();
 
@@ -65,8 +69,10 @@ async fn revoke_all_test() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn cleanup_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     let config = utils::load_test_config();
 
@@ -96,7 +102,7 @@ async fn cleanup_test() {
     ))
     .await;
     tokio::time::sleep(tokio::time::Duration::from_secs(
-        (config.jwt_expire_refresh_token_seconds + config.jwt_validation_leeway_seconds)as u64,
+        (config.jwt_expire_refresh_token_seconds + config.jwt_validation_leeway_seconds) as u64,
     ))
     .await;
 

@@ -4,8 +4,10 @@ pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
-#[ignore]
 async fn login_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 

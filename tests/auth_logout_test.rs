@@ -4,8 +4,10 @@ pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
-#[ignore]
 async fn logout_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     let config = utils::load_test_config();
 
@@ -31,10 +33,7 @@ async fn logout_test() {
     );
 
     // logout
-    assert_eq!(
-        auth::logout(&refresh_token).await.unwrap(),
-        StatusCode::OK
-    );
+    assert_eq!(auth::logout(&refresh_token).await.unwrap(), StatusCode::OK);
 
     // try access to the root handler after logout
     assert_eq!(

@@ -4,8 +4,10 @@ pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
-#[ignore]
 async fn refresh_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 
@@ -37,8 +39,10 @@ async fn refresh_test() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn refresh_logout_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     let config = utils::load_test_config();
 

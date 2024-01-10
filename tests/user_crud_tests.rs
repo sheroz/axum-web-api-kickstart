@@ -1,12 +1,17 @@
 pub mod common;
-use axum_web::{application::security::jwt_claims::{self, AccessClaims}, domain::models::user::User};
+use axum_web::{
+    application::security::jwt_claims::{self, AccessClaims},
+    domain::models::user::User,
+};
 use common::{auth, utils, *};
 use reqwest::StatusCode;
 use uuid::Uuid;
 
 #[tokio::test]
-#[ignore]
 async fn list_users_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 
@@ -14,7 +19,9 @@ async fn list_users_test() {
     let (status, _) = users::list("xyz").await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH)
+        .await
+        .unwrap();
     assert_eq!(status, StatusCode::OK);
     let (access_token, _) = result.unwrap();
 
@@ -32,8 +39,10 @@ async fn list_users_test() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn get_user_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 
@@ -41,7 +50,9 @@ async fn get_user_test() {
     let (status, _) = users::get(uuid::Uuid::new_v4(), "").await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH)
+        .await
+        .unwrap();
     assert_eq!(status, StatusCode::OK);
     let (access_token, _) = result.unwrap();
 
@@ -58,22 +69,24 @@ async fn get_user_test() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn add_get_update_delete_user_test() {
+    // run the api server
+    utils::api_run().await;
+
     // load test configuration
     utils::load_test_config();
 
-    let username = format!("test-{}",chrono::Utc::now().timestamp() as usize);
+    let username = format!("test-{}", chrono::Utc::now().timestamp() as usize);
     let mut user = User {
-         id: Uuid::new_v4(),
-         username: username.clone(),
-         email: format!("{}@email.com", username),
-         password_hash: "xyz123".to_string(),
-         password_salt: "xyz123".to_string(),
-         active: true,
-         roles: "guest".to_string(),
-         created_at: None,
-         updated_at: None 
+        id: Uuid::new_v4(),
+        username: username.clone(),
+        email: format!("{}@email.com", username),
+        password_hash: "xyz123".to_string(),
+        password_salt: "xyz123".to_string(),
+        active: true,
+        roles: "guest".to_string(),
+        created_at: None,
+        updated_at: None,
     };
 
     // try unauthorized access to user handlers
@@ -90,7 +103,9 @@ async fn add_get_update_delete_user_test() {
     let status = users::delete(user.id, &access_token).await.unwrap();
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH).await.unwrap();
+    let (status, result) = auth::login(TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD_HASH)
+        .await
+        .unwrap();
     assert_eq!(status, StatusCode::OK);
     let (access_token, _) = result.unwrap();
 
@@ -114,7 +129,7 @@ async fn add_get_update_delete_user_test() {
     assert_eq!(user_result, user);
 
     // update user
-    user.username = format!("test-{}",chrono::Utc::now().timestamp() as usize);
+    user.username = format!("test-{}", chrono::Utc::now().timestamp() as usize);
     let (status, result) = users::update(user.clone(), &access_token).await.unwrap();
     assert_eq!(status, reqwest::StatusCode::OK);
     assert!(result.is_some());
