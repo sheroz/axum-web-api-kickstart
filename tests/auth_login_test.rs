@@ -5,11 +5,8 @@ use common::{auth, route, utils, *};
 
 #[tokio::test]
 async fn login_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
 
     // try unauthorized access to the root handler
     assert_eq!(

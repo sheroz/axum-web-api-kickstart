@@ -9,11 +9,8 @@ use uuid::Uuid;
 
 #[tokio::test]
 async fn list_users_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
 
     // try unauthorized access to the users handler
     let (status, _) = users::list("xyz").await.unwrap();
@@ -40,11 +37,8 @@ async fn list_users_test() {
 
 #[tokio::test]
 async fn get_user_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
 
     // try unauthorized access to the get user handler
     let (status, _) = users::get(uuid::Uuid::new_v4(), "").await.unwrap();
@@ -70,11 +64,8 @@ async fn get_user_test() {
 
 #[tokio::test]
 async fn add_get_update_delete_user_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
 
     let username = format!("test-{}", chrono::Utc::now().timestamp() as usize);
     let mut user = User {

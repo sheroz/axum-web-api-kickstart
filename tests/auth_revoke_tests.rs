@@ -1,4 +1,7 @@
-use axum_web::application::security::jwt_claims::{self, AccessClaims};
+use axum_web::application::{
+    config,
+    security::jwt_claims::{self, AccessClaims},
+};
 use reqwest::StatusCode;
 
 pub mod common;
@@ -6,11 +9,9 @@ use common::{auth, route, utils, *};
 
 #[tokio::test]
 async fn revoke_user_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    let config = utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
+    let config = config::get();
 
     // assert that revoked options are enabled
     assert!(config.jwt_enable_revoked_tokens);
@@ -41,11 +42,9 @@ async fn revoke_user_test() {
 
 #[tokio::test]
 async fn revoke_all_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    let config = utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
+    let config = config::get();
 
     // assert that revoked options are enabled
     assert!(config.jwt_enable_revoked_tokens);
@@ -70,11 +69,9 @@ async fn revoke_all_test() {
 
 #[tokio::test]
 async fn cleanup_test() {
-    // run the api server
-    utils::api_run().await;
-
-    // load test configuration
-    let config = utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
+    let config = config::get();
 
     // assert that revoked options are enabled
     assert!(config.jwt_enable_revoked_tokens);

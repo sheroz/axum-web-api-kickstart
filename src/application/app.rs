@@ -1,6 +1,6 @@
 use crate::{
     api::router,
-    application::shared::{config, state::AppState},
+    application::{config, state::AppState},
     infrastructure::{postgres, redis},
 };
 use std::sync::Arc;

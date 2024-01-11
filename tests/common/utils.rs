@@ -1,9 +1,12 @@
-use axum_web::application::shared::config;
+use axum_web::application::config;
 use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::time::{timeout_at, Instant};
 
-pub async fn api_run() {
+pub async fn start_api() {
+    std::env::set_var("ENV_TEST", "1");
+    config::load();
+
     let (api_ready_tx, api_ready_rx) = oneshot::channel();
 
     // run the api server
@@ -15,12 +18,6 @@ pub async fn api_run() {
     if (timeout_at(service_start_timeout, api_ready_rx).await).is_err() {
         println!("Could not start API Service in 5 seconds");
     }
-}
-
-pub fn load_test_config() -> &'static config::Config {
-    std::env::set_var("ENV_TEST", "1");
-    config::load();
-    config::get()
 }
 
 pub fn build_url(version: &str, path: &str, url: &str) -> reqwest::Url {

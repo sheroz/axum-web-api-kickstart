@@ -1,11 +1,10 @@
 use crate::{
     application::{
-        redis_service,
-        repository::user_repo,
-        shared::{config, state::SharedState},
+        api_error::ApiError, config, redis_service, repository::user_repo, state::SharedState,
     },
     domain::models::user::User,
 };
+use hyper::StatusCode;
 use uuid::Uuid;
 
 use super::{auth_error::*, jwt_claims::*};
@@ -15,26 +14,26 @@ pub struct JwtTokens {
     pub refresh_token: String,
 }
 
-pub async fn logout(refresh_claims: RefreshClaims, state: SharedState) -> Result<(), AuthError> {
+pub async fn logout(refresh_claims: RefreshClaims, state: SharedState) -> Result<(), ApiError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
     if config::get().jwt_enable_revoked_tokens {
         // decode and validate the refresh token
         if !validate_token_type(&refresh_claims, JwtTokenType::RefreshToken) {
-            return Err(AuthError::InvalidToken);
+            return Err(AuthError::InvalidToken.into());
         }
         revoke_refresh_token(&refresh_claims, &state).await
     } else {
-        Err(AuthError::NotAcceptable)
+        Err(StatusCode::NOT_ACCEPTABLE.into())
     }
 }
 
 pub async fn refresh(
     refresh_claims: RefreshClaims,
     state: SharedState,
-) -> Result<JwtTokens, AuthError> {
+) -> Result<JwtTokens, ApiError> {
     // decode and validate the refresh token
     if !validate_token_type(&refresh_claims, JwtTokenType::RefreshToken) {
-        return Err(AuthError::InvalidToken);
+        return Err(AuthError::InvalidToken.into());
     }
 
     // checking the configuration if the usage of the list of revoked tokens is enabled
@@ -47,22 +46,27 @@ pub async fn refresh(
         let tokens = generate_tokens(user);
         return Ok(tokens);
     }
-    Err(AuthError::InternalServerError)
+
+    Err(ApiError {
+        status_code: StatusCode::UNPROCESSABLE_ENTITY,
+        error_message: format!("user not found: {}", user_id),
+    })
 }
 
 pub async fn cleanup_revoked_and_expired(
     _access_claims: &AccessClaims,
     state: &SharedState,
-) -> Result<usize, AuthError> {
+) -> Result<usize, ApiError> {
     // checking the configuration if the usage of the list of revoked tokens is enabled
     if !config::get().jwt_enable_revoked_tokens {
-        return Err(AuthError::NotAcceptable);
+        return Err(StatusCode::NOT_ACCEPTABLE.into());
     }
 
     if let Some(deleted) = redis_service::cleanup_expired(state).await {
         return Ok(deleted);
     }
-    Err(AuthError::InternalServerError)
+
+    Err(StatusCode::INTERNAL_SERVER_ERROR.into())
 }
 
 pub fn validate_token_type(claims: &RefreshClaims, expected_type: JwtTokenType) -> bool {
@@ -80,13 +84,13 @@ pub fn validate_token_type(claims: &RefreshClaims, expected_type: JwtTokenType) 
 async fn revoke_refresh_token(
     refresh_claims: &RefreshClaims,
     state: &SharedState,
-) -> Result<(), AuthError> {
+) -> Result<(), ApiError> {
     // check the validity of refresh token
     validate_revoked(refresh_claims, state).await?;
     if redis_service::revoke_refresh_token(refresh_claims, state).await {
         return Ok(());
     }
-    Err(AuthError::InternalServerError)
+    Err(StatusCode::INTERNAL_SERVER_ERROR.into())
 }
 
 pub fn generate_tokens(user: User) -> JwtTokens {
@@ -98,7 +102,8 @@ pub fn generate_tokens(user: User) -> JwtTokens {
 
     let access_token_id = Uuid::new_v4().to_string();
     let refresh_token_id = Uuid::new_v4().to_string();
-    let access_token_exp = (time_now + chrono::Duration::seconds(config.jwt_expire_access_token_seconds))
+    let access_token_exp = (time_now
+        + chrono::Duration::seconds(config.jwt_expire_access_token_seconds))
     .timestamp() as usize;
 
     let access_claims = AccessClaims {
@@ -154,16 +159,17 @@ pub fn generate_tokens(user: User) -> JwtTokens {
     }
 }
 
-pub async fn validate_revoked<T: std::fmt::Debug + ClaimsMethods>(claims: &T, state: &SharedState) -> Result<(), AuthError> {
+pub async fn validate_revoked<T: std::fmt::Debug + ClaimsMethods>(
+    claims: &T,
+    state: &SharedState,
+) -> Result<(), ApiError> {
     match redis_service::is_revoked(claims, state).await {
         Some(revoked) => {
             if revoked {
-                return Err(AuthError::WrongCredentials);
+                return Err(AuthError::WrongCredentials.into());
             }
         }
-        None => {
-            return Err(AuthError::InternalServerError);
-        }
+        None => return Err(StatusCode::INTERNAL_SERVER_ERROR.into()),
     }
     Ok(())
 }

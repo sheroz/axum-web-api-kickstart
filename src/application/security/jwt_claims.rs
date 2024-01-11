@@ -12,8 +12,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::application::{
+    config,
+    api_error::ApiError,
     security::{self, auth_error::*},
-    shared::{config, state::SharedState},
+    state::SharedState,
 };
 
 use super::jwt_auth;
@@ -139,7 +141,7 @@ where
     SharedState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = AuthError;
+    type Rejection = ApiError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         decode_token_from_request_part(parts, state).await
@@ -152,17 +154,17 @@ where
     SharedState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = AuthError;
+    type Rejection = ApiError;
 
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         decode_token_from_request_part(parts, state).await
     }
 }
 
-async fn decode_token_from_request_part<S, T>(parts: &mut Parts, state: &S) -> Result<T, AuthError>
+async fn decode_token_from_request_part<S, T>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<T, ApiError>
 where
     SharedState: FromRef<S>,
     S: Send + Sync,
@@ -192,15 +194,11 @@ pub fn decode_token<T: for<'de> serde::Deserialize<'de>>(token: &str) -> Result<
     let config = config::get();
     let mut validation = jsonwebtoken::Validation::default();
     validation.leeway = config.jwt_validation_leeway_seconds as u64;
-    let token_data = jsonwebtoken::decode::<T>(
-        token,
-        &config.jwt_keys.decoding,
-        &validation,
-    )
-    .map_err(|_| {
-        tracing::error!("Invalid token: {}", token);
-        AuthError::WrongCredentials
-    })?;
+    let token_data = jsonwebtoken::decode::<T>(token, &config.jwt_keys.decoding, &validation)
+        .map_err(|_| {
+            tracing::error!("Invalid token: {}", token);
+            AuthError::WrongCredentials
+        })?;
 
-    Ok(token_data.claims) 
+    Ok(token_data.claims)
 }

@@ -9,6 +9,7 @@ The project covers:
 
 - REST API based on `axum`
   - routing
+  - api versioning
   - CORS settings
   - error handling
   - graceful shutdown
@@ -32,6 +33,9 @@ The project covers:
 - `docker-compose` configuration
   - `Redis` service
   - `PostgreSQL` service
+- API tests
+- GitHub CI configuration
+  - `docker` based e2e tests
 
 ## Run
 
@@ -46,7 +50,7 @@ run in test configuration
 ENV_TEST=1 cargo run
 ```
 
-REST API usage samples: [/tests/endpoints.http](/tests/endpoints.http)
+REST API parameters: [tests/endpoints.http](/tests/endpoints.http)
 
 ## Logging
 
