@@ -3,11 +3,13 @@ use axum_web::application::{
     security::jwt_claims::{self, AccessClaims},
 };
 use reqwest::StatusCode;
+use serial_test::serial;
 
 pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
+#[serial]
 async fn revoke_user_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
@@ -41,6 +43,7 @@ async fn revoke_user_test() {
 }
 
 #[tokio::test]
+#[serial]
 async fn revoke_all_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
@@ -68,6 +71,7 @@ async fn revoke_all_test() {
 }
 
 #[tokio::test]
+#[serial]
 async fn cleanup_test() {
     // load the test configuration and start the api server
     utils::start_api().await;

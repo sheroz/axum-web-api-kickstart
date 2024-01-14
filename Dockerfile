@@ -1,11 +1,10 @@
 FROM rust:1.75
 
-RUN mkdir ./app
-
-COPY ./src ./app/src
-COPY ./tests ./app/tests
-COPY ./.env ./app/.env
-COPY ./.env_test ./app/.env_test
-COPY ./Cargo.toml ./app/Cargo.toml
+COPY ./src ./src
+COPY ./tests ./tests
+COPY ./.env ./.env
+COPY ./.env_test ./.env_test
+COPY ./.env_test_docker ./.env_test_docker
+COPY ./Cargo.toml ./Cargo.toml
 
 EXPOSE 3000

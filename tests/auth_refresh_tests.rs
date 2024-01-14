@@ -1,10 +1,12 @@
 use axum_web::application::config;
 use reqwest::StatusCode;
+use serial_test::serial;
 
 pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
+#[serial]
 async fn refresh_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
@@ -37,6 +39,7 @@ async fn refresh_test() {
 }
 
 #[tokio::test]
+#[serial]
 async fn refresh_logout_test() {
     // load the test configuration and start the api server
     utils::start_api().await;

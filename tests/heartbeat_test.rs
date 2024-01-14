@@ -1,5 +1,6 @@
 use axum_web::application::app_const::*;
 use uuid::Uuid;
+use serial_test::serial;
 
 pub mod common;
 use common::{fetch, utils};
@@ -8,6 +9,7 @@ const PATH_HEARTBEAT: &str = "heartbeat";
 const API_V1: &str = "v1";
 
 #[tokio::test]
+#[serial]
 async fn heartbeat_test() {
     // load the test configuration and start the api server
     utils::start_api().await;

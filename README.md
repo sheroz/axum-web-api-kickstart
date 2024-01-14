@@ -16,9 +16,9 @@ The project covers:
 - `JWT` based authentication & authorization
   - access tokens
   - refresh tokens
-  - tokens expiry set by configuration
+  - setting the tokens expiry time (based on configuration)
   - refresh tokens rotation technique
-  - revoked tokens using `Redis` controlled by configuration
+  - revoking the issued tokens by using `Redis` (based on configuration)
     - revoke all tokens issued until the current time
     - revoke tokens belonging to a user issued until the current time
     - cleanup of revoked tokens
@@ -35,7 +35,7 @@ The project covers:
   - `PostgreSQL` service
 - API tests
 - GitHub CI configuration
-  - `docker` based e2e tests
+  - `docker` based end-to-end tests
 
 ## Run
 

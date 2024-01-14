@@ -26,12 +26,6 @@ services:
       - "3000:3000"
     env_file:
       - .env_test_docker
-    command:
-      - /bin/sh
-      - -c
-      - |
-        cd app
-        cargo test
 
 volumes:
   redis:

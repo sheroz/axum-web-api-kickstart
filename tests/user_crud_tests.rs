@@ -5,9 +5,12 @@ use axum_web::{
 };
 use common::{auth, utils, *};
 use reqwest::StatusCode;
+use serial_test::serial;
+
 use uuid::Uuid;
 
 #[tokio::test]
+#[serial]
 async fn list_users_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
@@ -36,6 +39,7 @@ async fn list_users_test() {
 }
 
 #[tokio::test]
+#[serial]
 async fn get_user_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
@@ -63,6 +67,7 @@ async fn get_user_test() {
 }
 
 #[tokio::test]
+#[serial]
 async fn add_get_update_delete_user_test() {
     // load the test configuration and start the api server
     utils::start_api().await;
