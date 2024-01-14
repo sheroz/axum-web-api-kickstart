@@ -40,14 +40,14 @@ The project covers:
 
 ## Run
 
-Running the REST API service
+Running the REST API service:
 
 ```text
 docker-compose up -d
 cargo run
 ```
 
-Running the service in test configuration
+Running the service in test configuration:
 
 ```text
 ENV_TEST=1 cargo run
@@ -56,6 +56,7 @@ ENV_TEST=1 cargo run
 ## Tests
 
 REST API tests: [/tests](/tests)
+
 REST API parameters: [tests/endpoints.http](/tests/endpoints.http)
 
 Running the API tests:
@@ -67,7 +68,7 @@ cargo test
 
 ## Logging
 
-Setting the `RUST_LOG` - logging level on the launch
+Setting the `RUST_LOG` - logging level on the launch:
 
 ```text
 RUST_LOG=info,hyper=debug,axum_web=trace cargo run
