@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tokio::sync::MutexGuard;
 
 use super::{app_const::*, security::jwt_claims::{RefreshClaims, ClaimsMethods}};
-use crate::application::shared::state::SharedState;
+use crate::application::state::SharedState;
 
 pub async fn revoke_global(state: &SharedState) -> bool {
     let timestamp_now = chrono::Utc::now().timestamp() as usize;

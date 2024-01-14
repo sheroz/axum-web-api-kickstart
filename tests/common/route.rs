@@ -1,4 +1,4 @@
-use axum_web::application::shared::config;
+use axum_web::application::config;
 
 use super::GenericResult;
 

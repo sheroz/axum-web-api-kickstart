@@ -13,9 +13,9 @@ dotenv = "0.15"
 axum = { version = "0.7" }
 axum-extra = { version = "0.9", features = ["typed-header"] }
 tokio = { version = "1", features = ["full"] }
-bytes = "1"
+bytes = "1.5"
 tower-http = { version = "0.5", features = ["cors"] }
-tracing = "0.1"
+tracing = { version = "0.1", features = ["attributes"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 http-body-util = { version = "0.1" }
 hyper = { version = "1.1", features = ["full"] }
@@ -40,7 +40,8 @@ sqlx = { version = "0.7", features = [
     "chrono",
 ] }
 
-jsonwebtoken = { version = "9" }
+jsonwebtoken = { version = "9.2" }
 
 [dev-dependencies]
-reqwest = { version = "0.11", features = ["json"]}
+serial_test = "3.0"
+reqwest = { version = "0.11", features = ["json"] }

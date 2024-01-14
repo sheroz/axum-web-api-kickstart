@@ -1,8 +1,8 @@
 ### heartbeat check (public)
-GET http://127.0.0.1:3000/heartbeat/1
+GET http://127.0.0.1:3000/v1/heartbeat/1
 
 ### login 
-POST http://127.0.0.1:3000/auth/login
+POST http://127.0.0.1:3000/v1/auth/login
 Content-type: application/json; charset=utf8
 
 {
@@ -16,42 +16,42 @@ Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 ### refresh tokens
-POST http://127.0.0.1:3000/auth/refresh
+POST http://127.0.0.1:3000/v1/auth/refresh
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 ### logout 
-POST http://127.0.0.1:3000/auth/logout
+POST http://127.0.0.1:3000/v1/auth/logout
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 ### revoke user 
-POST http://127.0.0.1:3000/auth/revoke-user
+POST http://127.0.0.1:3000/v1/auth/revoke-user
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 { "user_id" : "617646a0-7437-48a0-bb03-a7aa830f8f81" }
 
 ### revoke all 
-POST http://127.0.0.1:3000/auth/revoke-all
+POST http://127.0.0.1:3000/v1/auth/revoke-all
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 ### cleanup revoked tokens 
-POST http://127.0.0.1:3000/auth/cleanup
+POST http://127.0.0.1:3000/v1/auth/cleanup
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVDo2NTZlZGI3OC03MDlhLTRjMTQtOWIyOC1mNDAwMzk0MjkxMjgiLCJpYXQiOjE3MDM4OTAxNzEsImV4cCI6MTcwMzg5Mzc3MX0.-pduSKuPUn2HF9dMVHyVswTtV59DabmgiNB5sf7M3qo
 
 ### list users
-GET http://127.0.0.1:3000/users
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0
+GET http://127.0.0.1:3000/v1/users
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxOTZhN2E4OS04NjczLTRhYTYtYjI0YS04YWU5ZmFhZGI4MDYiLCJqdGkiOiJmOTlkNDVkMS00NmNmLTQ2YWEtYmUxMC05ZTE5ZjYxZWZlYTMiLCJpYXQiOjE3MDUwMDQyNDMsImV4cCI6MTcwNTAwNzg0MywidHlwIjowLCJyb2xlcyI6ImFkbWluIn0.bzESfqPs2emVtAksS-zs7sjMQmFeSam-psM4wdlO3MU
 
 ### get user
-GET http://127.0.0.1:3000/users/617646a0-7437-48a0-bb03-a7aa830f8f81
+GET http://127.0.0.1:3000/v1/users/617646a0-7437-48a0-bb03-a7aa830f8f81
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0
 
 ### add a new user
-POST http://127.0.0.1:3000/users
+POST http://127.0.0.1:3000/v1/users
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0
 
@@ -64,7 +64,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwM
 }
 
 ### update user
-PUT http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
+PUT http://127.0.0.1:3000/v1/users/917646a0-7437-48a0-bb03-a7aa830f8f81
 Content-type: application/json; charset=utf8
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0
 
@@ -77,7 +77,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwM
 }
 
 ### delete user
-DELETE http://127.0.0.1:3000/users/917646a0-7437-48a0-bb03-a7aa830f8f81
+DELETE http://127.0.0.1:3000/v1/users/917646a0-7437-48a0-bb03-a7aa830f8f81
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYzUxN2IwMC05NjhhLTRiOTUtYWY5NC1kZjBmZDI4NmZiNTEiLCJqdGkiOiJBVGUxODcxNjcwLTU3OTAtNDk0ZS1iMWQwLWYzOWM2NzJmYjg5YyIsImlhdCI6MTcwMzc3ODQwOSwiZXhwIjoxNzAzNzgyMDA5fQ.FWd0cyS5FfcmANp87kEVLt1lJtwgoe4d7rh49ZGKrC0
 
 ###

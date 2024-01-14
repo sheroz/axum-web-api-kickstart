@@ -1,6 +1,6 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
-use crate::application::shared::config::Config;
+use crate::application::config::Config;
 
 pub async fn pgpool(config: &Config) -> Pool<Postgres> {
     match PgPoolOptions::new()

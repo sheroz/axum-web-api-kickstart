@@ -1,6 +1,6 @@
 use redis::aio::Connection;
 
-use crate::application::shared::config::Config;
+use crate::application::config::Config;
 
 pub async fn open(config: &Config) -> Connection {
     match redis::Client::open(config.redis_url()) {

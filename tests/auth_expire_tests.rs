@@ -1,13 +1,16 @@
+use axum_web::application::config;
 use reqwest::StatusCode;
+use serial_test::serial;
 
 pub mod common;
 use common::{auth, route, utils, *};
 
 #[tokio::test]
-#[ignore]
+#[serial]
 async fn access_token_expire_test() {
-    // load test configuration
-    let config = utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
+    let config = config::get();
 
     // assert that revoked options are enabled
     assert!(config.jwt_enable_revoked_tokens);
@@ -43,10 +46,11 @@ async fn access_token_expire_test() {
 }
 
 #[tokio::test]
-#[ignore]
+#[serial]
 async fn refresh_token_expire_test() {
-    // load test configuration
-    let config = utils::load_test_config();
+    // load the test configuration and start the api server
+    utils::start_api().await;
+    let config = config::get();
 
     // assert that revoked options are enabled
     assert!(config.jwt_enable_revoked_tokens);
