@@ -33,9 +33,9 @@ The project covers:
 - `docker-compose` configuration
   - `Redis` service
   - `PostgreSQL` service
-- API tests
-- GitHub CI configuration
+- Tests
   - `docker` based end-to-end tests
+  - WIP: GitHub CI configuration
 
 ## Run
 
@@ -48,6 +48,13 @@ run in test configuration
 
 ```text
 ENV_TEST=1 cargo run
+```
+
+## Test
+
+```text
+docker-compose up -d
+cargo test
 ```
 
 REST API parameters: [tests/endpoints.http](/tests/endpoints.http)
