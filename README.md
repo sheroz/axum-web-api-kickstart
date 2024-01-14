@@ -35,7 +35,7 @@ The project covers:
   - `PostgreSQL` service
 - Tests
   - `docker` based end-to-end tests
-  - WIP: GitHub CI configuration
+  - GitHub CI configuration for running tests
 
 ## Run
 
