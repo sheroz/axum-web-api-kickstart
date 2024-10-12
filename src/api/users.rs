@@ -35,9 +35,12 @@ async fn list_users_handler(
     tracing::trace!("api version: {}", api_version);
     tracing::trace!("authentication details: {:#?}", access_claims);
     access_claims.validate_role_admin()?;
-    match user_repo::all_users(&state).await {
-        Some(users) => Ok(Json(users)),
-        None => Err(StatusCode::NOT_FOUND.into()),
+    match user_repo::get_all(&state).await {
+        Ok(users) => Ok(Json(users)),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into())
+        }
     }
 }
 
@@ -50,9 +53,12 @@ async fn add_user_handler(
     tracing::trace!("api version: {}", api_version);
     tracing::trace!("authentication details: {:#?}", access_claims);
     access_claims.validate_role_admin()?;
-    match user_repo::add_user(user, &state).await {
-        Some(user) => Ok((StatusCode::CREATED, Json(user))),
-        None => Err(StatusCode::INTERNAL_SERVER_ERROR.into()),
+    match user_repo::add(user, &state).await {
+        Ok(user) => Ok((StatusCode::CREATED, Json(user))),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into())
+        }
     }
 }
 
@@ -66,9 +72,12 @@ async fn get_user_handler(
     tracing::trace!("authentication details: {:#?}", access_claims);
     tracing::trace!("id: {}", id);
     access_claims.validate_role_admin()?;
-    match user_repo::get_user(id, &state).await {
-        Some(user) => Ok(Json(user)),
-        None => Err(StatusCode::NOT_FOUND.into()),
+    match user_repo::get_by_id(id, &state).await {
+        Ok(user) => Ok(Json(user)),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::NOT_FOUND.into())
+        }
     }
 }
 
@@ -83,9 +92,12 @@ async fn update_user_handler(
     tracing::trace!("authentication details: {:#?}", access_claims);
     tracing::trace!("id: {}", id);
     access_claims.validate_role_admin()?;
-    match user_repo::update_user(id, user, &state).await {
-        Some(user) => Ok(Json(user)),
-        None => Err(StatusCode::NOT_FOUND.into()),
+    match user_repo::update(id, user, &state).await {
+        Ok(user) => Ok(Json(user)),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into())
+        }
     }
 }
 
@@ -99,12 +111,15 @@ async fn delete_user_handler(
     tracing::trace!("authentication details: {:#?}", access_claims);
     tracing::trace!("id: {}", id);
     access_claims.validate_role_admin()?;
-    match user_repo::delete_user(id, &state).await {
-        Some(true) => Ok(StatusCode::OK),
-        Some(false) => Err(ApiError {
+    match user_repo::delete(id, &state).await {
+        Ok(true) => Ok(StatusCode::OK),
+        Ok(false) => Err(ApiError {
             status_code: StatusCode::NOT_FOUND,
             error_message: format!("User not found for deletion: {}", id),
         }),
-        None => Err(StatusCode::INTERNAL_SERVER_ERROR.into()),
+        Err(e) => {
+            tracing::error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into())
+        }
     }
 }

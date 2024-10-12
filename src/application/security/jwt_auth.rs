@@ -42,7 +42,7 @@ pub async fn refresh(
     }
 
     let user_id = refresh_claims.sub.parse().unwrap();
-    if let Some(user) = user_repo::get_user(user_id, &state).await {
+    if let Ok(user) = user_repo::get_by_id(user_id, &state).await {
         let tokens = generate_tokens(user);
         return Ok(tokens);
     }

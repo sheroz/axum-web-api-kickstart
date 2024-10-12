@@ -11,7 +11,7 @@ The project covers:
   - routing
   - api versioning
   - CORS settings
-  - error handling
+  - basic error handling
   - graceful shutdown
 - `JSON Web Tokens (JWT)` based authentication & authorization
   - login, logout, refresh, and revoking operations
