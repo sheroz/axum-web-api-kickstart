@@ -3,6 +3,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+// TODO: get rid of boilerplate handlers
+// TODO: support for structured (detailed) errors
 pub struct ApiError {
     pub status_code: StatusCode,
     pub error_message: String,
