@@ -1,10 +1,10 @@
-use redis::aio::Connection;
+use redis::aio::MultiplexedConnection;
 
 use crate::application::config::Config;
 
-pub async fn open(config: &Config) -> Connection {
+pub async fn open(config: &Config) -> MultiplexedConnection {
     match redis::Client::open(config.redis_url()) {
-        Ok(redis) => match redis.get_async_connection().await {
+        Ok(redis) => match redis.get_multiplexed_async_connection().await {
             Ok(connection) => {
                 tracing::info!("Connected to redis");
                 connection

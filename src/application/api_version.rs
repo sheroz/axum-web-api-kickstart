@@ -38,9 +38,11 @@ impl std::fmt::Display for ApiVersion {
 pub fn parse_version(version: &str) -> Result<ApiVersion, ApiError> {
     match version.parse() {
         Ok(v) => Ok(v),
-        Err(_) => {
-            Err(ApiVersionError::InvalidApiVersion(format!("Unknown API Version: {}", version)).into())
-        },
+        Err(_) => Err(ApiVersionError::InvalidApiVersion(format!(
+            "Unknown API Version: {}",
+            version
+        ))
+        .into()),
     }
 }
 
@@ -52,9 +54,10 @@ where
     type Rejection = ApiError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let params: Path<HashMap<String, String>> = parts.extract().await.map_err(|_| {
-            ApiVersionError::VersionExtractError
-        })?;
+        let params: Path<HashMap<String, String>> = parts
+            .extract()
+            .await
+            .map_err(|_| ApiVersionError::VersionExtractError)?;
 
         let version = params
             .get("version")

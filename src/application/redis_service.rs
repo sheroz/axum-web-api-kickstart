@@ -1,8 +1,11 @@
-use redis::{aio::Connection, AsyncCommands, RedisResult};
+use redis::{aio::MultiplexedConnection, AsyncCommands, RedisResult};
 use std::collections::HashMap;
 use tokio::sync::MutexGuard;
 
-use super::{app_const::*, security::jwt_claims::{RefreshClaims, ClaimsMethods}};
+use super::{
+    app_const::*,
+    security::jwt_claims::{ClaimsMethods, RefreshClaims},
+};
 use crate::application::state::SharedState;
 
 pub async fn revoke_global(state: &SharedState) -> bool {
@@ -41,7 +44,7 @@ pub async fn revoke_user_tokens(user_id: &str, state: &SharedState) -> bool {
 
 async fn is_global_revoked<T: ClaimsMethods>(
     claims: &T,
-    redis: &mut MutexGuard<'_, redis::aio::Connection>,
+    redis: &mut MutexGuard<'_, redis::aio::MultiplexedConnection>,
 ) -> Option<bool> {
     // check in global revoke
     let redis_result: RedisResult<Option<String>> =
@@ -72,7 +75,7 @@ async fn is_global_revoked<T: ClaimsMethods>(
 
 async fn is_user_revoked<T: ClaimsMethods>(
     claims: &T,
-    redis: &mut MutexGuard<'_, redis::aio::Connection>,
+    redis: &mut MutexGuard<'_, redis::aio::MultiplexedConnection>,
 ) -> Option<bool> {
     // check in user revoke
     let user_id = claims.get_sub();
@@ -104,7 +107,7 @@ async fn is_user_revoked<T: ClaimsMethods>(
 
 async fn is_token_revoked<T: ClaimsMethods>(
     claims: &T,
-    redis: &mut MutexGuard<'_, redis::aio::Connection>,
+    redis: &mut MutexGuard<'_, redis::aio::MultiplexedConnection>,
 ) -> Option<bool> {
     // check the token in revoked list
     let redis_result: RedisResult<bool> = redis
@@ -119,7 +122,10 @@ async fn is_token_revoked<T: ClaimsMethods>(
     }
 }
 
-pub async fn is_revoked<T: std::fmt::Debug + ClaimsMethods>(claims: &T, state: &SharedState) -> Option<bool> {
+pub async fn is_revoked<T: std::fmt::Debug + ClaimsMethods>(
+    claims: &T,
+    state: &SharedState,
+) -> Option<bool> {
     let mut redis = state.redis.lock().await;
     match is_global_revoked(claims, &mut redis).await {
         Some(revoked) => {
@@ -211,7 +217,8 @@ async fn delete_expired_tokens(state: &SharedState) -> RedisResult<usize> {
         match exp.parse::<usize>() {
             Ok(timestamp_exp) => {
                 if timestamp_now > timestamp_exp {
-                    redis.hdel(JWT_REDIS_REVOKED_TOKENS_KEY, key).await?;
+                    // Workaround for https://github.com/redis-rs/redis-rs/issues/1322
+                    let _: () = redis.hdel(JWT_REDIS_REVOKED_TOKENS_KEY, key).await?;
                     deleted += 1;
                 }
             }
@@ -228,7 +235,7 @@ async fn delete_expired_tokens(state: &SharedState) -> RedisResult<usize> {
     Ok(deleted)
 }
 
-pub async fn log_revoked_tokens_count(redis: &mut Connection) {
+pub async fn log_revoked_tokens_count(redis: &mut MultiplexedConnection) {
     let redis_result: RedisResult<usize> = redis.hlen(JWT_REDIS_REVOKED_TOKENS_KEY).await;
     match redis_result {
         Ok(revoked_tokens_count) => {
@@ -243,7 +250,7 @@ pub async fn log_revoked_tokens_count(redis: &mut Connection) {
     }
 }
 
-pub async fn log_revoked_tokens(redis: &mut Connection) {
+pub async fn log_revoked_tokens(redis: &mut MultiplexedConnection) {
     let redis_result: RedisResult<HashMap<String, String>> =
         redis.hgetall(JWT_REDIS_REVOKED_TOKENS_KEY).await;
 

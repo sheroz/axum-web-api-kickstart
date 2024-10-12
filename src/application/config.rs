@@ -87,7 +87,7 @@ pub fn load() {
     };
 
     // try to load environment variables from file
-    if dotenv::from_filename(env_file).is_ok() {
+    if dotenvy::from_filename(env_file).is_ok() {
         tracing::info!("{} file loaded", env_file);
     } else {
         tracing::info!("{} file not found, using existing environment", env_file);

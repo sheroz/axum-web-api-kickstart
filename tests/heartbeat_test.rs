@@ -1,6 +1,6 @@
 use axum_web::application::app_const::*;
-use uuid::Uuid;
 use serial_test::serial;
+use uuid::Uuid;
 
 pub mod common;
 use common::{fetch, utils};

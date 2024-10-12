@@ -1,4 +1,4 @@
-FROM rust:1.75
+FROM rust:1.181
 
 COPY ./src ./src
 COPY ./tests ./tests
