@@ -44,7 +44,7 @@ async fn login_handler(
     Json(login): Json<LoginUser>,
 ) -> Result<impl IntoResponse, ApiError> {
     tracing::trace!("api version: {}", api_version);
-    if let Some(user) = user_repo::get_user_by_username(&login.username, &state).await {
+    if let Ok(user) = user_repo::get_user_by_username(&login.username, &state).await {
         if user.active && user.password_hash == login.password_hash {
             tracing::trace!("access granted, user: {}", user.id);
             let tokens = jwt_auth::generate_tokens(user);
