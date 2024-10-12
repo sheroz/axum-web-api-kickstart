@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -9,11 +11,10 @@ use axum_extra::{
     TypedHeader,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::application::{
-    config,
     api_error::ApiError,
+    config,
     security::{self, auth_error::*},
     state::SharedState,
 };
@@ -161,10 +162,7 @@ where
     }
 }
 
-async fn decode_token_from_request_part<S, T>(
-    parts: &mut Parts,
-    state: &S,
-) -> Result<T, ApiError>
+async fn decode_token_from_request_part<S, T>(parts: &mut Parts, state: &S) -> Result<T, ApiError>
 where
     SharedState: FromRef<S>,
     S: Send + Sync,

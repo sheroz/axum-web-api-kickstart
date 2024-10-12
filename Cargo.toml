@@ -9,21 +9,21 @@ repository = "https://github.com/sheroz/axum-web"
 license = "MIT"
 
 [dependencies]
-dotenv = "0.15"
+dotenvy = "0.15"
 axum = { version = "0.7" }
 axum-extra = { version = "0.9", features = ["typed-header"] }
-tokio = { version = "1", features = ["full"] }
-bytes = "1.5"
-tower-http = { version = "0.5", features = ["cors"] }
+tokio = { version = "1.40", features = ["full"] }
+bytes = "1.7"
+tower-http = { version = "0.6", features = ["cors"] }
 tracing = { version = "0.1", features = ["attributes"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 http-body-util = { version = "0.1" }
-hyper = { version = "1.1", features = ["full"] }
+hyper = { version = "1.4", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.6", features = [
+uuid = { version = "1.10", features = [
     "v4",
     "fast-rng",
     "macro-diagnostics",
@@ -31,8 +31,8 @@ uuid = { version = "1.6", features = [
 ] }
 chrono = { version = "0.4", features = ["serde"] }
 
-redis = { version = "0.24", features = ["tokio-comp"] }
-sqlx = { version = "0.7", features = [
+redis = { version = "0.27", features = ["tokio-comp"] }
+sqlx = { version = "0.8", features = [
     "runtime-tokio-rustls",
     "postgres",
     "uuid",
@@ -40,8 +40,8 @@ sqlx = { version = "0.7", features = [
     "chrono",
 ] }
 
-jsonwebtoken = { version = "9.2" }
+jsonwebtoken = { version = "9.3" }
 
 [dev-dependencies]
-serial_test = "3.0"
-reqwest = { version = "0.11", features = ["json"] }
+serial_test = "3.1"
+reqwest = { version = "0.12", features = ["json"] }
