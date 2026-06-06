@@ -35,6 +35,18 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build and run the docker services
       run: docker compose up -d
+    - name: Wait for PostgreSQL
+      run: |
+        until docker compose exec -T postgres pg_isready -U admin -d axum_web; do
+          docker compose logs postgres
+          sleep 2
+        done
+    - name: Wait for Redis
+      run: |
+        until docker compose exec -T redis redis-cli ping; do
+          docker compose logs redis
+          sleep 2
+        done
     - name: Update the Rust toolchain
       run: rustup default 1.96 && rustc --version
     - name: Run tests
