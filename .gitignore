@@ -14,5 +14,3 @@ target/
 
 axum-api.session.sql
 .DS_Store
-
-Cargo.lock
