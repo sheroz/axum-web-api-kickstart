@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * security fix: `rustls-webpki` updated to prevent GHSA-82j2-j2ch-gfr8
 * chore: updated to Rust v1.96
 * chore: updated dependencies
+* fix: added database readiness check for CI
 
 ## 0.1.11 (2026-03-23)
 
