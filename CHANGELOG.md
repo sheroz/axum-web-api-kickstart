@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.1.12 (2026-06-07)
+
+* security fix: `rustls-webpki` updated to prevent GHSA-82j2-j2ch-gfr8
+* chore: updated to Rust v1.96
+* chore: updated dependencies
+
 ## 0.1.11 (2026-03-23)
 
 * security fix: `aws-lc-sys` updated to prevent GHSA-394x-vwmw-crm3

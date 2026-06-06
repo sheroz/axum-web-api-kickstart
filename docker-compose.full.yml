@@ -1,13 +1,13 @@
 services:
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     volumes:
       - redis:/data      
     ports:
       - '6379:6379'
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: always
     volumes:
       - postgres:/var/lib/postgresql/data

@@ -16,14 +16,14 @@ jobs:
     - uses: actions/checkout@v4
     - uses: EmbarkStudios/cargo-deny-action@v2
       with:
-        rust-version: "1.94"
+        rust-version: "1.96"
 
   cargo-fmt-clippy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Update the Rust toolchain
-      run: rustup default 1.94 && rustup component add rustfmt && rustup component add clippy && rustc --version
+      run: rustup default 1.96 && rustup component add rustfmt && rustup component add clippy && rustc --version
     - name: Cargo formatting check
       run: cargo fmt --all -- --check
     - name: Cargo clippy check
@@ -36,7 +36,7 @@ jobs:
     - name: Build and run the docker services
       run: docker compose up -d
     - name: Update the Rust toolchain
-      run: rustup default 1.94 && rustc --version
+      run: rustup default 1.96 && rustc --version
     - name: Run tests
       run: cargo test --verbose
     
@@ -45,6 +45,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Update the Rust toolchain
-      run: rustup default 1.94 && rustc --version
+      run: rustup default 1.96 && rustc --version
     - name: Build
       run: cargo build --verbose
