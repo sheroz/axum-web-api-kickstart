@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{AssertSqlSafe, PgPool, postgres::PgPoolOptions};
 
 use crate::infrastructure::database::{DatabaseError, DatabaseOptions};
 
@@ -42,8 +42,8 @@ impl PostgresDatabase {
             options.postgres.set_max_connections(1);
             let db = Self::connect(options).await?;
             let pool = db.pool();
-            let query = format!("CREATE DATABASE {}", test_db_name);
-            sqlx::query(&query).execute(pool).await?;
+            let query = format!("CREATE DATABASE {}", postgres_identifier(&test_db_name));
+            sqlx::query(AssertSqlSafe(query)).execute(pool).await?;
         }
 
         // Connect to the temporary database.
@@ -70,9 +70,16 @@ impl PostgresDatabase {
             // Drop the temporary database.
             let db = Self::connect(self.options.clone()).await?;
             let pool = db.pool();
-            let query = format!("DROP DATABASE IF EXISTS {} WITH (FORCE)", test_db_to_drop);
-            sqlx::query(&query).execute(pool).await?;
+            let query = format!(
+                "DROP DATABASE IF EXISTS {} WITH (FORCE)",
+                postgres_identifier(test_db_to_drop)
+            );
+            sqlx::query(AssertSqlSafe(query)).execute(pool).await?;
         }
         Ok(())
     }
+}
+
+fn postgres_identifier(identifier: &str) -> String {
+    format!(r#""{}""#, identifier.replace('"', "\"\""))
 }

@@ -1,13 +1,13 @@
 [package]
 name = "axum-web"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2024"
 authors = ["Sheroz Khaydarov"]
 description = "A sample starter project for building REST API Web service in Rust using axum, JWT, SQLx, PostgreSQL, and Redis"
 readme = "README.md"
 repository = "https://github.com/sheroz/axum-web"
 license = "MIT"
-rust-version = "1.94"
+rust-version = "1.96"
 
 [dependencies]
 dotenvy = "0.15"
@@ -34,8 +34,8 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
 
 redis = { version = "1.1", features = ["tokio-comp"] }
-sqlx = { version = "0.8", features = [
-    "runtime-tokio-rustls",
+sqlx = { version = "0.9", features = [
+    "runtime-tokio",
     "postgres",
     "uuid",
     "macros",
