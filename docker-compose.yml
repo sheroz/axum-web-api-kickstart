@@ -10,7 +10,7 @@ services:
     image: postgres:18-alpine
     restart: always
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql
     env_file:
       - .env
     ports:
